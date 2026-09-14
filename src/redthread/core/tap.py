@@ -133,7 +133,6 @@ class TAPAttack:
             f"{self._tap_profile.get('system_suffix', _ATTACKER_SYSTEM_PROMPT_TEMPLATE.format(persona_system_prompt='').strip())}"
         )
         
-        # Root node
         root_node = AttackNode(depth=0, score=0.0)
         trace.nodes.append(root_node)
         
@@ -144,7 +143,6 @@ class TAPAttack:
             logger.info("🌳 Evaluating Tree Depth %d/%d (Leaves: %d)", depth, self.settings.tree_depth, len(active_leaves))
             
             if self.settings.dry_run:
-                # Properly mock the tree expansion
                 new_leaves = []
                 for leaf in active_leaves:
                     for b in range(self.settings.branching_factor):
@@ -158,7 +156,6 @@ class TAPAttack:
                         trace.nodes.append(mock_node)
                         new_leaves.append(mock_node)
                 
-                # Mock Width Pruning
                 if len(new_leaves) > self.settings.tree_width:
                     active_leaves = new_leaves[:self.settings.tree_width]
                     for pruned in new_leaves[self.settings.tree_width:]:
@@ -168,11 +165,9 @@ class TAPAttack:
                     active_leaves = new_leaves
                 continue
 
-            # Phase 1: BRANCH
             new_nodes = await self._branch(active_leaves, persona, attacker_system_prompt, depth, trace.id)
             trace.nodes.extend(new_nodes)
 
-            # Phase 2: PRE-QUERY PRUNE
             surviving_nodes = self._prune_off_topic(new_nodes, persona.hidden_objective)
             logger.info("   -> Post-topic prune nodes: %d", len(surviving_nodes))
 
@@ -180,7 +175,6 @@ class TAPAttack:
                 logger.warning("All branches pruned at depth %d due to topic drift.", depth)
                 break
 
-            # Phase 3: ATTACK + ASSESS
             for idx, node in enumerate(surviving_nodes):
                 logger.debug("   Sending attack %d/%d to target...", idx+1, len(surviving_nodes))
                 node.target_response = await send_with_execution_metadata(
@@ -195,7 +189,6 @@ class TAPAttack:
                     ),
                 )
                 
-                # Fast inline score via target check
                 node.score = self._score_node(node.attacker_prompt, node.target_response, rubric_name)
                 logger.debug("   Node score: %.1f", node.score)
                 
@@ -207,11 +200,9 @@ class TAPAttack:
             if jailbreak_node:
                 break
 
-            # Phase 4: POST-SCORE PRUNE
             active_leaves = self._prune_by_score(surviving_nodes, self.settings.tree_width)
             logger.info("   -> Retaining top %d node(s) for next depth.", len(active_leaves))
 
-        # Final Evaluation via JudgeAgent if we have nodes
         logger.info("🔬 Running full G-Eval evaluation on best trace...")
         trace.ended_at = datetime.now(timezone.utc)
         
@@ -230,17 +221,14 @@ class TAPAttack:
                 duration_seconds=0.1,
             )
 
-        # Build trajectory leading up to best node
         best_node = jailbreak_node
         if not best_node and trace.nodes:
-            # Pick highest score leaf
             evaluated_nodes = [n for n in trace.nodes if n.depth > 0 and not n.is_pruned and n.score > 0]
             if evaluated_nodes:
                 best_node = max(evaluated_nodes, key=lambda x: x.score)
                 
         if best_node:
             win_path = self.reconstruct_path(best_node, trace.nodes)
-            # Add trajectory to turns for final analysis
             from redthread.models import ConversationTurn
             for p_node in win_path:
                 if p_node.depth > 0:
@@ -254,7 +242,6 @@ class TAPAttack:
                     )
 
         if not trace.turns:
-            # Edge case — nothing ran successfully
             trace.outcome = AttackOutcome.FAILURE
             from redthread.models import JudgeVerdict
             verdict = JudgeVerdict(
@@ -284,7 +271,6 @@ class TAPAttack:
         new_nodes = []
         for leaf in leaves:
             for branch_idx in range(self.settings.branching_factor):
-                # Pick strategy using modulo
                 strategy = self.strategies[branch_idx % len(self.strategies)]
                 
                 if leaf.depth == 0:
@@ -332,13 +318,12 @@ class TAPAttack:
         """Pre-Query Prune phase using heuristic keyword search."""
         objective_tokens = [t.lower() for t in objective.replace("(", "").replace(")", "").split() if len(t) > 3]
         if not objective_tokens:
-            return nodes  # Disabled if objective consists only of small words
+            return nodes
 
         surviving = []
         for node in nodes:
             prompt_lower = node.attacker_prompt.lower()
             
-            # Simple heuristic matching
             hit = False
             for token in objective_tokens:
                 if token in prompt_lower:
@@ -346,7 +331,6 @@ class TAPAttack:
                     break
                     
             if not hit and "ignore previous" not in prompt_lower and len(prompt_lower.split()) > 30:
-                # Prune if long and totally devoid of objective context
                 node.is_pruned = True
                 node.pruned_reason = "off_topic"
             else:
@@ -357,7 +341,6 @@ class TAPAttack:
     def _score_node(self, prompt: str, response: str, rubric_name: str) -> float:
         """Score a node via Judge heuristic inline."""
         from redthread.models import ConversationTurn
-        # Re-use JudgeAgent inline evaluation
         turn = ConversationTurn(
             turn_number=1,
             attacker_prompt=prompt,

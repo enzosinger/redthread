@@ -59,7 +59,6 @@ def test_evaluate_returns_aligned_scores_and_objective_breakdown() -> None:
     assert len(result.outputs) == len(result.scores) == len(batch)
     assert len(result.trajectories) == len(batch)
     assert all(0.0 <= s <= 1.0 for s in result.scores)
-    # Native multi-objective breakdown for GEPA's objective-level Pareto frontier.
     assert result.objective_scores[0] == {"a": pytest.approx(result.scores[0])}
 
 
@@ -73,7 +72,6 @@ def test_reflective_dataset_is_redacted_and_per_component() -> None:
     adapter = RedThreadGEPAAdapter(_cached_runner(0.7, 3.5), components=COMPONENTS)
     batch = [_objective("a")]
     eval_batch = adapter.evaluate(batch, _candidate(), capture_traces=True)
-    # Inject a sensitive string into the trajectory feedback to prove redaction.
     eval_batch.trajectories[0]["feedback"] = "leak CANARY-9 and sk-ABCDEFGHIJKLMNOPQR"
 
     dataset = adapter.make_reflective_dataset(_candidate(), eval_batch, COMPONENTS)

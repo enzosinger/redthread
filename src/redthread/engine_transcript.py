@@ -127,7 +127,6 @@ def _build_mcts_line(result: object) -> dict[str, object]:
 def _build_asi_line(campaign: CampaignResult) -> dict[str, object]:
     report = campaign.metadata["asi_report"]
     score = float(report.get("overall_score", 0.0))
-    # health_tier is a computed @property — not in model_dump() output
     if score >= 90:
         tier = "EXCELLENT"
     elif score >= 70:

@@ -32,9 +32,8 @@ class TestArimaDetectsSpike:
     """ARIMA must flag a dramatic latency spike as an anomaly."""
 
     def test_latency_spike_is_anomaly(self, detector: ArimaDetector) -> None:
-        # 29 stable latency readings, then a 10× spike
         series = _stable_series(29, base=200.0, noise=15.0)
-        series.append(5000.0)  # Sudden spike → anomaly
+        series.append(5000.0)
 
         result = detector.detect(series, "latency_ms")
 
@@ -46,7 +45,6 @@ class TestArimaDetectsSpike:
         assert result.observed == pytest.approx(5000.0)
 
     def test_token_velocity_drop_is_anomaly(self, detector: ArimaDetector) -> None:
-        # Normal token count ~300, sudden drop to 2 (evasion / guardrail hit)
         series = _stable_series(29, base=300.0, noise=20.0)
         series.append(2.0)
 
@@ -59,16 +57,11 @@ class TestArimaNoFalsePositives:
     """ARIMA should NOT flag normal noisy data as anomalous."""
 
     def test_stable_series_no_anomaly(self, detector: ArimaDetector) -> None:
-        # 30 observations of stable latency — last point is within normal range
         series = _stable_series(30, base=200.0, noise=10.0)
-        # Override last to be within expected range
         series[-1] = 205.0
 
         result = detector.detect(series, "latency_ms")
-        # We accept None (too few obs after removing last) or non-anomaly
         if result is not None:
-            # For a stable series, the last normal point should not be anomalous
-            # Allow borderline cases since ARIMA CI depends on auto_arima fit
             assert result.deviation_sigma < 5.0, (
                 f"False positive: normal value flagged with σ={result.deviation_sigma:.2f}"
             )
@@ -78,10 +71,9 @@ class TestArimaFallback:
     """ArimaDetector should fall back to Z-score when < min_observations."""
 
     def test_z_score_fallback_when_few_observations(self) -> None:
-        # Use min_observations=20; provide only 5 points → triggers Z-score
         detector = ArimaDetector(min_observations=20, confidence_level=0.95)
         series = _stable_series(5, base=100.0, noise=5.0)
-        series.append(500.0)  # Spike at the end
+        series.append(500.0)
 
         result = detector.detect(series, "latency_ms")
         assert result is not None

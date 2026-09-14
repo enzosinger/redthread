@@ -92,7 +92,6 @@ class TelemetryStorage:
     def get_metric_series(
         self, metric: str, window: int | None = None, organic_only: bool = True
     ) -> list[float]:
-        # Whitelist metric to avoid SQL injection
         allowed_metrics = {"latency_ms", "input_tokens", "output_tokens"}
         if metric not in allowed_metrics:
             raise ValueError(f"Metric {metric} not allowed for series extraction.")
@@ -105,7 +104,6 @@ class TelemetryStorage:
 
         with self._connection() as conn:
             rows = conn.execute(query).fetchall()
-            # Restore to chronological (id asc)
             return [float(row[0]) for row in reversed(rows) if row[0] is not None]
 
     def _row_to_record(self, row: sqlite3.Row) -> TelemetryRecord:

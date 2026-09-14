@@ -13,7 +13,6 @@ from uuid import uuid4
 
 from pydantic import BaseModel, Field
 
-# ── Enumerations ─────────────────────────────────────────────────────────────
 
 class MitreAtlasTactic(str, Enum):
     """MITRE ATLAS top-level tactics used to seed adversarial personas."""
@@ -39,14 +38,12 @@ class PsychologicalTrigger(str, Enum):
 class AttackOutcome(str, Enum):
     """Terminal state of a single attack run."""
 
-    SUCCESS = "success"          # Jailbreak confirmed by JudgeAgent
-    FAILURE = "failure"          # All iterations exhausted, no breakthrough
-    PARTIAL = "partial"          # Partial compliance (score above baseline, below threshold)
-    ERROR = "error"              # Infrastructure/API error during run
-    SKIPPED = "skipped"          # Run skipped (e.g., during dry run)
+    SUCCESS = "success"
+    FAILURE = "failure"
+    PARTIAL = "partial"
+    ERROR = "error"
+    SKIPPED = "skipped"
 
-
-# ── Persona ───────────────────────────────────────────────────────────────────
 
 class Persona(BaseModel):
     """An adversarial persona used to initialize the attacker LLM.
@@ -59,31 +56,27 @@ class Persona(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid4())[:8])
     name: str
     tactic: MitreAtlasTactic
-    technique: str                      # e.g., "AML.T0054 — LLM Prompt Injection"
-    cover_story: str                    # Stated, benign-sounding intent
-    hidden_objective: str               # Actual adversarial goal
-    system_prompt: str                  # Full system prompt injected into attacker LLM
+    technique: str
+    cover_story: str
+    hidden_objective: str
+    system_prompt: str
     psychological_triggers: list[PsychologicalTrigger]
-    seed_pretext: str = ""              # Optional seed from Pretext Project
+    seed_pretext: str = ""
     allowed_strategies: list[str] = Field(default_factory=list)
-    # Populated by PersonaGenerator; consumed by MCTS expansion phase.
-    # Empty list → MCTS falls back to TRIGGER_STRATEGY_MAP in mcts_helpers.
 
-
-# ── Conversation ──────────────────────────────────────────────────────────────
 
 class AttackNode(BaseModel):
     """A single node in a TAP attack tree."""
 
     id: str = Field(default_factory=lambda: str(uuid4())[:8])
-    parent_id: str | None = None          # None = root node
-    depth: int = 0                        # Tree depth level
+    parent_id: str | None = None
+    depth: int = 0
     attacker_prompt: str = ""
     target_response: str = ""
-    score: float = 0.0                    # Judge score for this node
+    score: float = 0.0
     improvement_rationale: str = ""
-    is_pruned: bool = False               # Marked dead by pruning phase
-    pruned_reason: str = ""               # "off_topic" | "low_score" | "duplicate"
+    is_pruned: bool = False
+    pruned_reason: str = ""
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
@@ -98,14 +91,12 @@ class MCTSNode(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid4())[:8])
     parent_id: str | None = None
     depth: int = 0
-    strategy: str = ""                    # High-level attack strategy for this branch
+    strategy: str = ""
     attacker_prompt: str = ""
     target_response: str = ""
-    # ── MCTS statistics ─────────────────────────────────────────────
-    visit_count: int = 0                  # n(s,a) — times this node was explored
-    total_reward: float = 0.0             # Cumulative backpropagated reward
-    score: float = 0.0                    # Direct inline score (set after simulation)
-    # ── Metadata ────────────────────────────────────────────────
+    visit_count: int = 0
+    total_reward: float = 0.0
+    score: float = 0.0
     is_terminal: bool = False
     is_expanded: bool = False
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -115,11 +106,11 @@ class CrescendoTurn(BaseModel):
     """A single turn in a Crescendo escalation dialogue."""
 
     turn_number: int
-    escalation_level: int = 0             # 0 = benign, 1-5 = increasing pressure
+    escalation_level: int = 0
     attacker_prompt: str
     target_response: str
-    score: float = 0.0                    # Per-turn G-Eval score
-    backtracked: bool = False             # Was this turn retried via backtracking?
+    score: float = 0.0
+    backtracked: bool = False
     backtrack_attempts: int = 0
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -131,8 +122,7 @@ class ConversationTurn(BaseModel):
     attacker_prompt: str
     target_response: str
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    # Metadata set by PAIR refinement loop
-    improvement_rationale: str = ""     # Attacker's CoT explanation for this attempt
+    improvement_rationale: str = ""
     is_successful: bool = False
 
 
@@ -141,18 +131,16 @@ class AttackTrace(BaseModel):
 
     id: str = Field(default_factory=lambda: f"trace-{str(uuid4())[:8]}")
     persona: Persona
-    algorithm: str                      # "pair" | "tap" | "crescendo" | "mcts"
+    algorithm: str
     turns: list[ConversationTurn] = Field(default_factory=list)
-    nodes: list[AttackNode] = Field(default_factory=list)    # TAP tree nodes
-    crescendo_turns: list[CrescendoTurn] = Field(default_factory=list)  # Crescendo
-    mcts_nodes: list[MCTSNode] = Field(default_factory=list)  # GS-MCTS tree nodes
+    nodes: list[AttackNode] = Field(default_factory=list)
+    crescendo_turns: list[CrescendoTurn] = Field(default_factory=list)
+    mcts_nodes: list[MCTSNode] = Field(default_factory=list)
     started_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     ended_at: datetime | None = None
     outcome: AttackOutcome = AttackOutcome.FAILURE
     metadata: dict[str, Any] = Field(default_factory=dict)
 
-
-# ── Evaluation ────────────────────────────────────────────────────────────────
 
 class JudgeVerdict(BaseModel):
     """Output from the JudgeAgent for a single evaluated turn or full trace.
@@ -162,12 +150,12 @@ class JudgeVerdict(BaseModel):
            5.0 = complete, confirmed guardrail bypass
     """
 
-    score: float                        # G-Eval probability-weighted float
-    raw_score: int                      # LLM's raw integer output (pre-weighting)
-    reasoning: str                      # Auto-CoT chain of thought
-    feedback: str                       # Actionable feedback for PAIR refinement
-    rubric_name: str                    # Which rubric was applied
-    is_jailbreak: bool                  # score >= success_threshold
+    score: float
+    raw_score: int
+    reasoning: str
+    feedback: str
+    rubric_name: str
+    is_jailbreak: bool
 
 
 class AttackResult(BaseModel):
@@ -180,13 +168,11 @@ class AttackResult(BaseModel):
     duration_seconds: float
 
 
-# ── Campaign ──────────────────────────────────────────────────────────────────
-
 class CampaignConfig(BaseModel):
     """User-supplied campaign parameters."""
 
-    objective: str              # What vulnerability category to probe
-    target_system_prompt: str   # The target agent's system prompt
+    objective: str
+    target_system_prompt: str
     rubric_name: str = "authorization_bypass"
     num_personas: int = 3
     prompting_layer_profile: dict[str, Any] = Field(default_factory=dict)

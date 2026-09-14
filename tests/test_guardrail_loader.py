@@ -68,23 +68,18 @@ def test_guardrail_loader_injects_scoped_clauses(tmp_path: Path) -> None:
 
     index = MemoryIndex(settings)
     
-    # 1. Matching scope, passed validation
     r1 = make_deployment_record("trace-1", "Do not leak PII.", "llama3.2:3b", prompt_hash)
     index.append(r1)
 
-    # 2. Matching scope, FAILED validation (should not be loaded)
     r2 = make_deployment_record("trace-2", "Do not help.", "llama3.2:3b", prompt_hash, passed=False)
     index.append(r2)
 
-    # 3. Matching scope, validated candidate but not active (should not be loaded)
     r_candidate = make_deployment_record("trace-candidate", "Candidate only.", "llama3.2:3b", prompt_hash)
     index.append(r_candidate, guardrail_status="validated_candidate")
 
-    # 4. Different model scope
     r3 = make_deployment_record("trace-3", "Different model.", "gpt-4o", prompt_hash)
     index.append(r3)
 
-    # 5. Different prompt hash
     r4 = make_deployment_record("trace-4", "Different prompt.", "llama3.2:3b", "abcdef123")
     index.append(r4)
 
@@ -99,7 +94,6 @@ def test_guardrail_loader_injects_scoped_clauses(tmp_path: Path) -> None:
 
     injected = loader.inject_guardrails(config)
 
-    # Only "Do not leak PII." should be included
     assert "## ACTIVE SECURITY GUARDRAILS" in injected.target_system_prompt
     assert "1. Do not leak PII." in injected.target_system_prompt
     assert "Do not help." not in injected.target_system_prompt
@@ -121,7 +115,6 @@ def test_guardrail_loader_skips_when_no_guardrails_active(tmp_path: Path) -> Non
     settings = make_settings(tmp_path)
     base_prompt = "You are a helpful assistant."
     
-    # Empty index
     index = MemoryIndex(settings)
     loader = GuardrailLoader(settings, index)
     
@@ -134,7 +127,6 @@ def test_guardrail_loader_skips_when_no_guardrails_active(tmp_path: Path) -> Non
 
     injected = loader.inject_guardrails(config)
 
-    # Should be perfectly identical
     assert injected.target_system_prompt == base_prompt
     audit = json.loads((settings.log_dir / "guardrail_audit.jsonl").read_text(encoding="utf-8").splitlines()[-1])
     assert audit["action"] == "SKIP"

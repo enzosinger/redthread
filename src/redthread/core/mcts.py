@@ -148,10 +148,8 @@ class MCTSAttack:
                 )
                 break
 
-            # Phase 1: SELECTION
             leaf = self._select(root, tree)
 
-            # Phase 2: EXPANSION
             children = await self._expand(
                 leaf, tree, trace, persona, strategies, attacker_system,
                 target_system_prompt, rubric_name
@@ -159,12 +157,10 @@ class MCTSAttack:
             if not children:
                 continue
 
-            # Phase 3: SIMULATION (rollout from first child)
             child = children[0]
             reward = await self._simulate(child, tree, persona, target_system_prompt, rubric_name)
             child.score = reward
 
-            # Phase 4: BACKPROPAGATION
             self._backpropagate(child, tree, reward)
 
             logger.debug(
@@ -182,7 +178,6 @@ class MCTSAttack:
         trace.metadata["tokens_consumed"] = self._tokens_consumed
         return await self._finalize(trace, tree, rubric_name, start_time)
 
-    # ── MCTS phases ───────────────────────────────────────────────────────────
 
     def _select(self, root: MCTSNode, tree: MCTSTree) -> MCTSNode:
         """Walk from root to the most promising unexplored or high-UCT leaf."""
@@ -328,7 +323,6 @@ class MCTSAttack:
             sim_history.append((rollout_msg.strip(), target_resp))
             current_depth += 1
 
-        # Score the terminal state of this rollout
         if sim_history:
             last_a, last_t = sim_history[-1]
             return self._judge.evaluate_turn_raw(last_a, last_t, rubric_name)
@@ -344,7 +338,6 @@ class MCTSAttack:
             parent_id = current.parent_id
             current = tree.get(parent_id) if parent_id else None
 
-    # ── Terminal evaluation & helpers ─────────────────────────────────────────
 
     async def _finalize(
         self,

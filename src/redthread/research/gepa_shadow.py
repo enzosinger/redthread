@@ -137,18 +137,14 @@ class ShadowHarness:
         return results
 
     def _process(self, candidate: GepaCandidate) -> GepaEvaluationResult:
-        # 1. Firewall: only allowlisted prompt-profile fields may pass.
         assert_allowlisted(candidate.components)
 
-        # 2. Snapshot is confined to the research runtime dir.
         snapshot_path = self._write_snapshot(candidate)
         candidate.snapshot_ref = str(snapshot_path)
 
-        # 3. Evaluate on each split via the (cached) evaluator — no live calls.
         train = self.evaluator.evaluate(candidate, "train")
         control = self.evaluator.evaluate(candidate, "control")
 
-        # 4. Score with a fail-closed control gate.
         result = score_candidate(
             candidate.candidate_id,
             train=train,
@@ -156,17 +152,14 @@ class ShadowHarness:
             max_average_asr=self.max_average_asr,
             max_average_score=self.max_average_score,
         )
-        # GEPA-accept is a search decision only; it never touches promotion/memory.
         result.accepted_by_gepa = result.control_gate_passed and result.scalar_score_for_optimizer > 0
 
-        # 5. Redacted side info — the only channel a reflection LM would ever read.
         side_info = build_side_info(candidate.candidate_id, train=train, control=control)
         side_info_path = self.workspace.gepa_side_info_path(candidate.candidate_id)
         side_info_path.parent.mkdir(parents=True, exist_ok=True)
         side_info_path.write_text(json.dumps(side_info, indent=2), encoding="utf-8")
         result.side_info_ref = str(side_info_path)
 
-        # 6. Persist candidate metadata + append a ledger row.
         self.workspace.gepa_candidate_path(candidate.candidate_id).write_text(
             candidate.model_dump_json(indent=2), encoding="utf-8"
         )

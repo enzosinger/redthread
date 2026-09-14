@@ -75,7 +75,6 @@ def render_dashboard(history: list[dict[str, Any]], console: Console) -> None:
     table.add_column("ASI", justify="right")
     table.add_column("Health", justify="center")
 
-    # Aggregates for footer
     total_runs = 0
     asr_values: list[float] = []
     asi_values: list[float] = []
@@ -95,7 +94,6 @@ def render_dashboard(history: list[dict[str, Any]], console: Console) -> None:
         if asi is not None:
             asi_values.append(asi)
 
-        # Format timestamp
         ts = camp.get("started_at", "")
         try:
             dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
@@ -103,7 +101,6 @@ def render_dashboard(history: list[dict[str, Any]], console: Console) -> None:
         except Exception:
             ts_str = ts[:16] if ts else "—"
 
-        # Format values
         asr_str = f"[{row_color}]{asr:.0%}[/{row_color}]"
         asi_str = (
             f"[{row_color}]{asi:.1f}[/{row_color}]"
@@ -128,7 +125,6 @@ def render_dashboard(history: list[dict[str, Any]], console: Console) -> None:
             tier_str,
         )
 
-    # Footer summary row
     avg_asr = sum(asr_values) / len(asr_values) if asr_values else 0.0
     avg_asi = sum(asi_values) / len(asi_values) if asi_values else None
     footer_color = _row_color(avg_asr, avg_asi, False)

@@ -25,7 +25,6 @@ from redthread.core.defense_synthesis import (
 from redthread.models import AttackResult, AttackTrace, JudgeVerdict
 from tests.defense_helpers import make_pair_result, make_persona, make_settings, make_tap_result
 
-# ── Step 1: Isolate ───────────────────────────────────────────────────────────
 
 def test_isolate_prefers_winning_tap_node() -> None:
     """_isolate should choose the highest-scoring, non-pruned TAP node."""
@@ -65,8 +64,6 @@ def test_isolate_handles_empty_trace() -> None:
     assert "unknown" in segment.attack_payload
 
 
-# ── Step 2+3: Classify + Generate ────────────────────────────────────────────
-
 def test_parse_architect_output_extracts_all_fields() -> None:
     """parse_architect_output should correctly parse the structured LLM format."""
 
@@ -93,17 +90,15 @@ def test_parse_architect_output_extracts_all_fields() -> None:
 def test_parse_architect_output_handles_missing_fields() -> None:
     """parse_architect_output should return safe defaults for missing fields."""
 
-    raw = "GUARDRAIL_CLAUSE: Do not disclose confidential data."  # only one field
+    raw = "GUARDRAIL_CLAUSE: Do not disclose confidential data."
 
     classification, clause, rationale = parse_architect_output(raw)
 
     assert classification.category == "unknown"
-    assert classification.owasp_ref == "LLM01"  # safe default
+    assert classification.owasp_ref == "LLM01"
     assert "confidential" in clause
     assert rationale == ""
 
-
-# ── Step 4: Validate (dry run) ────────────────────────────────────────────────
 
 @pytest.mark.asyncio
 async def test_validate_dry_run_always_passes() -> None:
@@ -146,8 +141,6 @@ async def test_validate_dry_run_always_passes() -> None:
     assert validation.replay_cases[0].kind == "exploit"
     assert all(check.passed for check in validation.benign_checks)
 
-
-# ── Full pipeline: dry run ────────────────────────────────────────────────────
 
 @pytest.mark.asyncio
 async def test_defense_synthesis_full_pipeline_dry_run() -> None:

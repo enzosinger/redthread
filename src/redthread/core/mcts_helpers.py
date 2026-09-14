@@ -21,12 +21,7 @@ from redthread.models import MCTSNode, Persona, PsychologicalTrigger
 if TYPE_CHECKING:
     pass
 
-# ── Strategy taxonomy ─────────────────────────────────────────────────────────
 
-# Maps each PsychologicalTrigger to 2-3 concrete conversational strategies.
-# This is the DETERMINISTIC fallback when PersonaGenerator does not produce
-# allowed_strategies. MCTS expansion samples from these when the persona's
-# allowed_strategies list is empty.
 TRIGGER_STRATEGY_MAP: dict[str, list[str]] = {
     PsychologicalTrigger.AUTHORITY.value: [
         "claim executive authority",
@@ -77,10 +72,8 @@ def derive_strategies(persona: Persona, use_cop: bool = False) -> list[str]:
         strategies.extend(TRIGGER_STRATEGY_MAP.get(trigger.value, []))
 
     if not strategies:
-        # Last-resort fallback: always returns something usable
         return ["establish rapport and escalate gradually"]
 
-    # Deduplicate while preserving order
     seen: set[str] = set()
     unique: list[str] = []
     for s in strategies:
@@ -89,8 +82,6 @@ def derive_strategies(persona: Persona, use_cop: bool = False) -> list[str]:
             unique.append(s)
     return unique
 
-
-# ── Tree management ───────────────────────────────────────────────────────────
 
 class MCTSTree:
     """Registry and navigation helpers for the GS-MCTS search tree.
@@ -157,8 +148,6 @@ class MCTSTree:
         """All registered nodes (including root)."""
         return list(self._nodes.values())
 
-
-# ── Prompt builders ───────────────────────────────────────────────────────────
 
 def format_mcts_history(history: list[tuple[str, str]]) -> str:
     """Format a list of (attacker, target) turns into readable conversation text."""

@@ -50,7 +50,6 @@ class GepaEvaluationResult(BaseModel):
     scalar_score_for_optimizer: float = 0.0
     objective_scores: list[GepaObjectiveScore] = Field(default_factory=list)
     control_gate_passed: bool = False
-    # Authority ladder — these must never collapse into one another.
     accepted_by_gepa: bool = False
     accepted_by_redthread_supervisor: bool = False
     promotion_status: str = "not_promoted"
