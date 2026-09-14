@@ -20,21 +20,17 @@ from redthread.core.defense_status import candidate_flags
 logger = logging.getLogger(__name__)
 
 
-# ── Worker state ──────────────────────────────────────────────────────────────
-
 class DefenseWorkerState(TypedDict):
     """State schema for the defense synthesis worker node."""
 
-    settings_dict: dict[str, Any]           # Serialized RedThreadSettings
-    result_dict: dict[str, Any]             # Serialized (judged) AttackResult
-    validated_candidate: bool              # Canonical: replay passed and candidate was indexed
-    defense_deployed: bool                  # Deprecated compat alias for validated_candidate
-    guardrail_clause: str | None            # The candidate clause (if generated)
-    record_dict: NotRequired[dict[str, Any]] # Serialized GuardrailRecord
+    settings_dict: dict[str, Any]
+    result_dict: dict[str, Any]
+    validated_candidate: bool
+    defense_deployed: bool
+    guardrail_clause: str | None
+    record_dict: NotRequired[dict[str, Any]]
     error: str | None
 
-
-# ── Worker node function ──────────────────────────────────────────────────────
 
 async def run_defense_worker(state: DefenseWorkerState) -> dict[str, Any]:
     """Run defense synthesis and index validated candidates, not active controls.
@@ -82,7 +78,7 @@ async def run_defense_worker(state: DefenseWorkerState) -> dict[str, Any]:
             return {
                 **state,
                 **candidate_flags(False),
-                "guardrail_clause": record.guardrail_clause,  # Still return clause for inspection
+                "guardrail_clause": record.guardrail_clause,
                 "record_dict": asdict(record),
                 "error": None,
             }

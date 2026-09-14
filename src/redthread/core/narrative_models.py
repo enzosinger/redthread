@@ -15,10 +15,10 @@ from pydantic import BaseModel, Field
 class NarrativePhase(str, Enum):
     """Ordered phases of a Crescendo narrative arc."""
 
-    RAPPORT = "rapport"          # Turns 1-2: benign, establish trust
-    LEGITIMACY = "legitimacy"    # Turns 3-4: credentials, plausibility
-    PRESSURE = "pressure"        # Turns 5-7: urgency, need, stakes
-    ASK = "ask"                  # Turns 8+:  the actual objective request
+    RAPPORT = "rapport"
+    LEGITIMACY = "legitimacy"
+    PRESSURE = "pressure"
+    ASK = "ask"
 
     def next(self) -> NarrativePhase:
         """Advance to the next phase (capped at ASK)."""
@@ -52,5 +52,5 @@ class NarrativeGuidance(BaseModel):
 
     recommended_strategy: str
     phase_action: Literal["hold", "escalate", "pivot"]
-    framing_hint: str           # Short directive for the attacker LLM
-    avoid_patterns: list[str]   # Strategies proven to fail — attacker should skip these
+    framing_hint: str
+    avoid_patterns: list[str]

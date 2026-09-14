@@ -27,7 +27,7 @@ class TelemetryCollector:
         self.settings = settings
         self.storage = TelemetryStorage(settings)
         self._canary_injection_count = 0
-        self._canary_interval = 10  # Inject canaries every N organic interactions
+        self._canary_interval = 10
 
     async def record_interaction(
         self,

@@ -23,7 +23,6 @@ from redthread.telemetry.asi import AgentStabilityIndex
 from redthread.telemetry.collector import TelemetryCollector
 from redthread.telemetry.models import ArimaForecast, TelemetryRecord
 
-# ── Fixtures ──────────────────────────────────────────────────────────────────
 
 @pytest.fixture
 def settings(tmp_path: Path) -> RedThreadSettings:
@@ -71,7 +70,7 @@ def _populate_collector_stable(
             input_tokens=50,
             output_tokens=100 + rng.randint(-5, 5),
             response_text="This is a normal response." * 3,
-            response_embedding=_make_embedding(base_seed),  # Same base cluster
+            response_embedding=_make_embedding(base_seed),
             is_canary=False,
         )
         collector.storage.insert(record)
@@ -84,7 +83,6 @@ def _populate_canaries_stable(
     canary_ids = ["canary-001", "canary-002", "canary-003"]
     for round_i in range(n_rounds):
         for cid in canary_ids:
-            # Same seed per canary_id across rounds = high consistency
             emb = _make_embedding(seed=hash(cid) % 1000)
             record = TelemetryRecord(
                 target_model="gpt-4o",
@@ -100,8 +98,6 @@ def _populate_canaries_stable(
             collector.storage.insert(record)
 
 
-# ── Test classes ──────────────────────────────────────────────────────────────
-
 class TestASIPerfectHealth:
     """Stable data should produce a high ASI score."""
 
@@ -114,15 +110,12 @@ class TestASIPerfectHealth:
 
         report = asi.compute(collector)
 
-        # With stable data, RC should be high (consistent canary embeddings)
         assert report.response_consistency >= 70.0, (
             f"Expected RC≥70 for stable data, got {report.response_consistency:.1f}"
         )
-        # BS should be high (stable token counts)
         assert report.behavioral_stability >= 70.0, (
             f"Expected BS≥70, got {report.behavioral_stability:.1f}"
         )
-        # Overall must be in bounds
         assert 0.0 <= report.overall_score <= 100.0
 
 
@@ -172,7 +165,6 @@ class TestASINoCanaryDefault:
     ) -> None:
         collector = TelemetryCollector(settings)
         _populate_collector_stable(collector, n=20)
-        # No canary records added
 
         report = asi.compute(collector)
         assert report.response_consistency == pytest.approx(100.0), (
@@ -186,14 +178,12 @@ class TestASIOperationalHealth:
     def test_no_operational_anomalies_gives_oh_100(
         self, asi: AgentStabilityIndex, settings: RedThreadSettings
     ) -> None:
-        # When ARIMA returns no anomalies, OH = 100
         report_oh = asi._score_operational_health(forecasts=[])
         assert report_oh == pytest.approx(100.0)
 
     def test_all_anomalies_gives_oh_zero(
         self, asi: AgentStabilityIndex
     ) -> None:
-        # All 3 metrics anomalous → OH = 0
         fake_anomalies = [
             ArimaForecast(
                 metric_name=m,
@@ -213,7 +203,6 @@ class TestASIOperationalHealth:
     def test_partial_anomalies_gives_proportional_oh(
         self, asi: AgentStabilityIndex
     ) -> None:
-        # 1 of 2 metrics anomalous → OH = 50
         forecasts = [
             ArimaForecast(
                 metric_name="latency_ms",
@@ -243,7 +232,6 @@ class TestASIRecommendation:
         _populate_canaries_stable(collector, n_rounds=5)
 
         report = asi.compute(collector)
-        # Whatever the score, check tier → recommendation consistency
         if report.health_tier == "EXCELLENT":
             assert (
                 "stable" in report.recommendation.lower()

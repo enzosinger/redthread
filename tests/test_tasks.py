@@ -15,7 +15,7 @@ def test_generate_task_id_format() -> None:
 
 def test_generate_task_id_uniqueness() -> None:
     ids = {generate_task_id(TaskType.CAMPAIGN) for _ in range(100)}
-    assert len(ids) == 100  # All unique
+    assert len(ids) == 100
 
 
 def test_task_initial_state() -> None:
@@ -64,20 +64,20 @@ def test_invalid_transition_completed_to_running() -> None:
     task.start()
     task.complete()
     with pytest.raises(ValueError, match="Invalid transition"):
-        task.start()  # Cannot restart a completed task
+        task.start()
 
 
 def test_invalid_transition_pending_to_completed() -> None:
     task = Task.create(TaskType.ATTACK_RUN)
     with pytest.raises(ValueError, match="Invalid transition"):
-        task.complete()  # Must go through RUNNING first
+        task.complete()
 
 
 def test_task_duration() -> None:
     import time
 
     task = Task.create(TaskType.DREAM)
-    assert task.duration_seconds is None  # Not started
+    assert task.duration_seconds is None
 
     task.start()
     time.sleep(0.05)

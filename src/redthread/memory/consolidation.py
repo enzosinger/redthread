@@ -81,7 +81,6 @@ class DreamConsolidator:
             for attack_result in jailbreak_results:
                 report.new_jailbreaks_found += 1
 
-                # Skip if already indexed
                 if attack_result.trace.id in known_trace_ids:
                     report.skipped_duplicates += 1
                     continue
@@ -144,19 +143,17 @@ class DreamConsolidator:
                     except json.JSONDecodeError:
                         continue
 
-                    # Only process attack_result lines with confirmed jailbreaks
                     if (
                         entry.get("type") == "attack_result"
                         and entry.get("is_jailbreak") is True
                     ):
-                        # Re-hydrate from raw log data if full model data included
                         if "full_result" in entry:
                             try:
                                 result = AttackResult.model_validate(entry["full_result"])
                                 if result.trace.id not in known_trace_ids:
                                     results.append(result)
                             except Exception:
-                                pass  # Silently skip malformed entries
+                                pass
 
         except OSError as exc:
             logger.error("Failed to read log file %s: %s", log_file, exc)

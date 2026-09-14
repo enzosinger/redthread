@@ -92,16 +92,14 @@ def _harness(
     )
 
 
-# 1. Unknown candidate fields are rejected by the allowlist.
 def test_allowlist_rejects_unknown_fields() -> None:
-    assert_allowlisted({"pair.system_suffix": "ok"})  # allowed
+    assert_allowlisted({"pair.system_suffix": "ok"})
     with pytest.raises(AllowlistViolation):
         assert_allowlisted({"evaluation.judge_prompt": "tamper"})
     with pytest.raises(AllowlistViolation):
         assert_allowlisted({"pair.system_suffix": "ok", "core.promotion": "x"})
 
 
-# 2. Snapshots write only under research_runtime_dir, never production profiles.
 def test_snapshot_confined_to_runtime_dir(tmp_path: Path) -> None:
     workspace = ResearchWorkspace(tmp_path)
 
@@ -113,11 +111,9 @@ def test_snapshot_confined_to_runtime_dir(tmp_path: Path) -> None:
 
     for snapshot in workspace.gepa_candidates_dir.rglob("prompt_profiles.json"):
         assert workspace.runtime_dir.resolve() in snapshot.resolve().parents
-    # Production prompt profiles must be untouched / non-existent in this temp root.
     assert not (tmp_path / "src").exists()
 
 
-# 3. Raw prompts, canaries, secrets, transcripts are redacted from gepa_side_info.
 def test_side_info_redacts_sensitive_content(tmp_path: Path) -> None:
     train = _summary(lane="train", asr=0.4, score=2.0)
     payload = build_side_info("gepa-x", train=train, notes="leak CANARY-123 and sk-ABCDEFGHIJKLMNOP now")
@@ -135,14 +131,13 @@ def test_side_info_assert_clean_catches_banned_keys() -> None:
         assert_clean({"transcript": "raw exploit body"})
 
 
-# 4. Control-lane failure rejects a candidate even when train score improves.
 def test_control_failure_rejects_despite_train_lift(tmp_path: Path) -> None:
     workspace = ResearchWorkspace(tmp_path)
 
     def cache(candidate: GepaCandidate, split: str) -> ResearchBatchSummary:
         if split == "control":
-            return _summary(lane="control", asr=0.9, score=4.5)  # blows the gate
-        return _summary(lane="train", asr=0.95, score=4.9)  # huge "lift"
+            return _summary(lane="control", asr=0.9, score=4.5)
+        return _summary(lane="train", asr=0.95, score=4.9)
 
     results = _harness(workspace, cache).run()
     for result in results:
@@ -157,21 +152,19 @@ def test_control_pass_allows_positive_score(tmp_path: Path) -> None:
 
     def cache(candidate: GepaCandidate, split: str) -> ResearchBatchSummary:
         if split == "control":
-            return _summary(lane="control", asr=0.0, score=1.0)  # within limits
+            return _summary(lane="control", asr=0.0, score=1.0)
         return _summary(lane="train", asr=0.8, score=4.0)
 
     results = _harness(workspace, cache).run()
     assert any(r.scalar_score_for_optimizer > 0 and r.accepted_by_gepa for r in results)
 
 
-# 5. Train/val/control split overlap fails fast.
 def test_split_overlap_fails_fast() -> None:
-    validate_splits(["a", "b"], ["c"], ["d"])  # disjoint OK
+    validate_splits(["a", "b"], ["c"], ["d"])
     with pytest.raises(SplitOverlap):
         validate_splits(["a", "b"], ["b"], ["d"])
 
 
-# 6. Budget stop halts execution.
 def test_budget_stop(tmp_path: Path) -> None:
     workspace = ResearchWorkspace(tmp_path)
 
@@ -180,7 +173,7 @@ def test_budget_stop(tmp_path: Path) -> None:
 
     harness = ShadowHarness(
         workspace,
-        MockProposer(_seed(), children=5),  # 6 candidates total
+        MockProposer(_seed(), children=5),
         CachedEvaluator(cache),
         max_candidates=2,
         max_average_asr=CONTROL_MAX_ASR,
@@ -190,7 +183,6 @@ def test_budget_stop(tmp_path: Path) -> None:
         harness.run()
 
 
-# 7. A GEPA accept cannot mutate promotion state or MemoryIndex.
 def test_no_promotion_or_memory_writes(tmp_path: Path) -> None:
     workspace = ResearchWorkspace(tmp_path)
 
@@ -201,7 +193,6 @@ def test_no_promotion_or_memory_writes(tmp_path: Path) -> None:
 
     _harness(workspace, cache).run()
 
-    # All writes are confined to the gepa runtime subtree; promotion/memory dirs stay empty.
     assert not any(workspace.promotions_dir.iterdir())
     assert not any(workspace.research_memory_dir.iterdir())
     written = list(workspace.gepa_dir.rglob("*"))
@@ -210,7 +201,6 @@ def test_no_promotion_or_memory_writes(tmp_path: Path) -> None:
         assert workspace.gepa_dir.resolve() in path.resolve().parents or path == workspace.gepa_dir
 
 
-# 8. ObjectiveResult plumbing round-trips deterministically.
 def test_objective_result_roundtrip() -> None:
     summary = _summary(lane="train", asr=0.5, score=3.0, slugs=("a", "b"))
     restored = ResearchBatchSummary.model_validate_json(summary.model_dump_json())

@@ -154,11 +154,9 @@ class CrescendoAttack:
             f"{cresc_profile.get('system_suffix', _ATTACKER_SYSTEM_PROMPT.format(persona_system_prompt='').strip())}"
         )
 
-        # Client-side history: list of (attacker_msg, target_response)
         history: list[tuple[str, str]] = []
         escalation_level = 0
 
-        # Narrative adaptation layer
         narrative_state = NarrativeState()
         narrative_policy = NarrativeAdaptationPolicy(
             strategies=derive_strategies(persona, use_cop=self.settings.use_cop),
@@ -170,12 +168,10 @@ class CrescendoAttack:
                 logger.info("🟡 Dry run — skipping target interaction")
                 break
 
-            # ── Narrative guidance for this turn ──────────────────────────────
             guidance: NarrativeGuidance | None = None
             if narrative_policy is not None:
                 guidance = narrative_policy.recommend(narrative_state)
 
-            # ── Generate + backtrack loop ─────────────────────────────────────
             accepted: CrescendoTurn | None = None
 
             for attempt in range(1, self.settings.crescendo_backtrack_limit + 2):
@@ -210,7 +206,6 @@ class CrescendoAttack:
                 )
                 attacker_msg = attacker_msg.strip()
 
-                # Build full prompt for target (stateless: inject full history)
                 target_prompt = self._compile_target_prompt(history, attacker_msg)
                 target_response = await send_with_execution_metadata(
                     self._get_target(),
@@ -254,14 +249,12 @@ class CrescendoAttack:
             if accepted:
                 trace.crescendo_turns.append(accepted)
 
-                # Also populate standard turns for compatibility with Judge/Logger
                 trace.turns.append(ConversationTurn(
                     turn_number=turn_num,
                     attacker_prompt=accepted.attacker_prompt,
                     target_response=accepted.target_response,
                 ))
 
-                # Update narrative state after accepted turn
                 if narrative_policy is not None and guidance is not None:
                     narrative_state = narrative_policy.update(
                         state=narrative_state,
@@ -277,10 +270,8 @@ class CrescendoAttack:
                     )
                     break
 
-        # ── Terminal evaluation ───────────────────────────────────────────────
         trace.ended_at = datetime.now(timezone.utc)
 
-        # Persist final narrative state in trace metadata
         if narrative_policy is not None:
             trace.metadata["narrative_state"] = narrative_state.model_dump()
 
@@ -313,7 +304,6 @@ class CrescendoAttack:
             duration_seconds=time.monotonic() - start_time,
         )
 
-    # ── Helpers ───────────────────────────────────────────────────────────────
 
     def _format_history(self, history: list[tuple[str, str]]) -> str:
         if not history:

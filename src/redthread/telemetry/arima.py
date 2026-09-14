@@ -30,11 +30,10 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-# Metrics that ARIMA monitors on the organic (non-canary) stream
 MONITORED_METRICS = [
     "latency_ms",
     "output_tokens",
-    "response_length",   # Derived: len(response_text) — added in collector
+    "response_length",
 ]
 
 
@@ -95,7 +94,6 @@ class ArimaDetector:
             logger.debug("ArimaDetector | %s | too few points (%d) — skipping", metric_name, len(series))
             return None
 
-        # Apply rolling window
         window = series[-self.window_size:]
 
         if len(window) < self.min_observations:
@@ -105,7 +103,6 @@ class ArimaDetector:
             )
             return self._z_score_fallback(window, metric_name)
 
-        # Use all but the last point as training history; forecast the last.
         train = window[:-1]
         observed = window[-1]
 
@@ -116,10 +113,10 @@ class ArimaDetector:
                 warnings.simplefilter("ignore")
                 model = auto_arima(
                     train,
-                    stepwise=True,        # Faster grid search
+                    stepwise=True,
                     suppress_warnings=True,
                     error_action="ignore",
-                    max_p=3, max_q=3,     # Cap search space for speed
+                    max_p=3, max_q=3,
                     information_criterion="aic",
                 )
 
@@ -177,7 +174,6 @@ class ArimaDetector:
         forecasts: list[ArimaForecast] = []
         organic_records = collector.get_organic_records(window=self.window_size)
 
-        # latency_ms and output_tokens come directly from collector
         for metric in ("latency_ms", "output_tokens"):
             series = collector.get_metric_series(metric, window=self.window_size)
             if series:
@@ -185,7 +181,6 @@ class ArimaDetector:
                 if result is not None:
                     forecasts.append(result)
 
-        # response_length is derived from response_text
         lengths = [len(r.response_text) for r in organic_records]
         if lengths:
             result = self.detect(lengths, "response_length")

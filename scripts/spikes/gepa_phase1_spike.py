@@ -49,7 +49,6 @@ from redthread.research.objectives import default_research_config
 from redthread.research.prompt_profiles import default_prompt_profiles, load_prompt_profiles
 from redthread.research.workspace import ResearchWorkspace
 
-# Keep the spike tiny: two attacker components, a couple of objectives.
 COMPONENTS = ["pair.system_suffix", "tap.strategies"]
 
 Runner = Callable[[ResearchObjective, dict[str, str]], ObjectiveResult]
@@ -152,7 +151,6 @@ def main() -> int:
     if args.mock:
         runner = make_mock_runner()
         adapter = RedThreadGEPAAdapter(runner, components=COMPONENTS)
-        # Harness check: a drifted candidate must score >= the seed under the mock.
         tweaked = {**seed, "pair.system_suffix": seed["pair.system_suffix"] + "\n# tweak"}
         baseline = _score(runner, holdout, seed)
         candidate = _score(runner, holdout, tweaked)
@@ -166,7 +164,6 @@ def main() -> int:
         print("[mock] harness OK — wiring is sound. Live run will produce the real lift number.")
         return 0
 
-    # --- live path ---
     if not args.reflection_model:
         parser.error(
             "live run needs --reflection-model (or REDTHREAD_GEPA_REFLECTION_MODEL), "

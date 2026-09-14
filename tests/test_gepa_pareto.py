@@ -39,7 +39,6 @@ def test_dominates_basic() -> None:
 def test_non_dominating_specialists() -> None:
     offense = _c("offense", a=0.9, b=0.2)
     defense = _c("defense", a=0.2, b=0.9)
-    # Neither dominates the other — they specialize on different axes.
     assert not dominates(offense, defense)
     assert not dominates(defense, offense)
 
@@ -47,7 +46,7 @@ def test_non_dominating_specialists() -> None:
 def test_frontier_keeps_both_specialists() -> None:
     offense = _c("offense", a=0.9, b=0.2)
     defense = _c("defense", a=0.2, b=0.9)
-    mediocre = _c("mediocre", a=0.3, b=0.3)  # dominated by neither extreme on both axes
+    mediocre = _c("mediocre", a=0.3, b=0.3)
     frontier = pareto_frontier([offense, defense, mediocre])
     ids = {c.candidate_id for c in frontier}
     assert "offense" in ids and "defense" in ids
@@ -79,7 +78,7 @@ def test_select_parent_is_deterministic_with_seed() -> None:
     frontier = [_c("offense", a=0.9, b=0.2), _c("defense", a=0.2, b=0.9)]
     a = select_parent(frontier, rng=random.Random(7)).candidate_id
     b = select_parent(frontier, rng=random.Random(7)).candidate_id
-    assert a == b  # same seed -> same choice
+    assert a == b
 
 
 def test_candidate_from_result_ignores_control_split() -> None:
@@ -92,4 +91,4 @@ def test_candidate_from_result_ignores_control_split() -> None:
         ],
     )
     projected = candidate_from_result(result)
-    assert projected.scores == {"a": 0.7, "b": 0.4}  # control axis excluded
+    assert projected.scores == {"a": 0.7, "b": 0.4}

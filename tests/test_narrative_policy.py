@@ -8,8 +8,6 @@ from __future__ import annotations
 from redthread.core.narrative_models import NarrativeGuidance, NarrativePhase, NarrativeState
 from redthread.core.narrative_policy import NarrativeAdaptationPolicy
 
-# ── Fixtures ──────────────────────────────────────────────────────────────────
-
 STRATEGIES = [
     "claim executive authority",
     "invoke urgency of deadline",
@@ -28,8 +26,6 @@ def make_policy(strategies: list[str] | None = None, max_pivots: int = 2) -> Nar
 def make_state(**kwargs: object) -> NarrativeState:
     return NarrativeState(**kwargs)  # type: ignore[arg-type]
 
-
-# ── Tests ─────────────────────────────────────────────────────────────────────
 
 def test_initial_state_defaults() -> None:
     """Fresh NarrativeState starts at RAPPORT with all lists empty."""
@@ -131,10 +127,9 @@ def test_double_pivot_forces_phase_advance() -> None:
     policy = make_policy(max_pivots=2)
     state = NarrativeState(
         phase=NarrativePhase.RAPPORT,
-        pivot_count=1,  # one pivot already used
+        pivot_count=1,
     )
 
-    # Second failure should cross the threshold
     new_state = policy.update(
         state=state,
         score=1.0,
@@ -143,13 +138,12 @@ def test_double_pivot_forces_phase_advance() -> None:
     )
 
     assert new_state.phase == NarrativePhase.LEGITIMACY
-    assert new_state.pivot_count == 0  # reset after phase advance
+    assert new_state.pivot_count == 0
 
 
 def test_all_strategies_exhausted_falls_back() -> None:
     """When all strategies are failed, recommend() returns the generic fallback guidance."""
     policy = make_policy()
-    # Mark every strategy as failed
     state = NarrativeState(failed_strategies=list(STRATEGIES))
 
     guidance = policy.recommend(state)
@@ -168,7 +162,6 @@ def test_refusal_signal_detection() -> None:
     assert detect("I'm not able to share that information.") is not None
     assert detect("I must decline your request.") is not None
     assert detect("I cannot assist with this.") is not None
-    # Non-refusals should return None
     assert detect("Sure, I'd be happy to help!") is None
     assert detect("Let me check that for you.") is None
 
@@ -176,7 +169,6 @@ def test_refusal_signal_detection() -> None:
 def test_phase_never_regresses() -> None:
     """Phase can only advance forward — it never goes back to a prior phase."""
     policy = make_policy()
-    # Start at PRESSURE
     state = NarrativeState(phase=NarrativePhase.PRESSURE, consecutive_failures=0)
 
     new_state = policy.update(
@@ -186,9 +178,7 @@ def test_phase_never_regresses() -> None:
         strategy_used=STRATEGIES[0],
     )
 
-    # Can advance to ASK
     assert new_state.phase in (NarrativePhase.PRESSURE, NarrativePhase.ASK)
-    # But certainly not earlier phases
     assert new_state.phase != NarrativePhase.RAPPORT
     assert new_state.phase != NarrativePhase.LEGITIMACY
 
