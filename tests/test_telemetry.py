@@ -97,3 +97,15 @@ def test_drift_detector_computes_distance() -> None:
     
     assert results[1]["is_anomaly"] is True
     assert results[1]["distance"] > 3.0
+
+
+def test_drift_detector_zero_vector_no_nan() -> None:
+    """Zero-vector embeddings must not produce NaN or division warnings."""
+    import numpy as np
+
+    detector = DriftDetector()
+    a = np.zeros((2, 3), dtype=np.float64)
+    b = np.array([[1.0, 0.0, 0.0]], dtype=np.float64)
+    dist = detector._cosine_distance(a, b)
+    assert not np.isnan(dist).any()
+    assert not np.isinf(dist).any()

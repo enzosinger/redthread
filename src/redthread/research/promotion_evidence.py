@@ -5,7 +5,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from redthread.core.defense_models import DeploymentRecord
-from redthread.core.defense_utility_gate import evaluate_defense_record
+from redthread.core.defense_utility_gate import (
+    REASON_OVERBROAD_DEFENSE,
+    evaluate_defense_record,
+)
 
 _WEAK_EVIDENCE_PREFIXES = ("evidence_mode_not_promotable:",)
 _WEAK_EVIDENCE_CHECKS = {
@@ -17,6 +20,7 @@ _FAILED_VALIDATION_CHECKS = {
     "exploit_replay_not_blocked",
     "benign_suite_not_preserved",
     "replay_case_failures_present",
+    REASON_OVERBROAD_DEFENSE,
 }
 
 
