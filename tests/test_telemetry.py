@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import warnings
+
+import numpy as np
 import pytest
 
 from redthread.config.settings import RedThreadSettings, TargetBackend
@@ -53,6 +56,21 @@ def test_drift_detector_baseline_fitting() -> None:
     assert detector.k_neighbors == 2
     assert detector._core_distances is not None
     assert len(detector._core_distances) == 3
+
+
+def test_drift_detector_cosine_distance_handles_zero_vectors() -> None:
+    detector = DriftDetector(distance_metric="cosine")
+
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        distances = detector._cosine_distance(
+            np.array([[0.0, 0.0], [1.0, 0.0]]),
+            np.array([[0.0, 0.0], [0.0, 1.0]]),
+        )
+
+    assert not any(issubclass(warning.category, RuntimeWarning) for warning in caught)
+    assert np.all(np.isfinite(distances))
+    np.testing.assert_allclose(distances, np.ones((2, 2)))
 
 
 def test_drift_detector_computes_distance() -> None:
