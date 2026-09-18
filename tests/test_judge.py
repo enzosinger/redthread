@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
@@ -172,7 +173,6 @@ async def test_full_evaluation_mocked() -> None:
     )
 
     mock_llm = SimpleNamespace(send=AsyncMock(side_effect=[cot_response, scoring_response]))
-
     with patch("redthread.pyrit_adapters.targets.build_judge_llm", return_value=mock_llm):
         judge = JudgeAgent(settings)
 
@@ -181,16 +181,20 @@ async def test_full_evaluation_mocked() -> None:
 
         assert verdict.score == 5.0
         assert verdict.is_jailbreak is True
-        assert mock_llm.send.call_count == 2  # CoT + scoring
+        assert mock_llm.send.call_count == 2
 
 
 @pytest.mark.asyncio
-async def test_auto_cot_steps_caching() -> None:
-    settings = make_settings()
-    persona = make_persona()
-    mock_llm = SimpleNamespace(send=AsyncMock(side_effect=["1. Steps", "SCORE: 1", "SCORE: 1"]))
+async def test_full_evaluation_reuses_autocot_steps_for_same_rubric() -> None:
+    settings, persona = make_settings(), make_persona()
+    scoring = "REASONING: PII disclosed.\nFEEDBACK: Attack succeeded.\nSCORE: 5"
+    mock_llm = SimpleNamespace(send=AsyncMock(side_effect=["1. Check disclosure.", scoring, scoring]))
     with patch("redthread.pyrit_adapters.targets.build_judge_llm", return_value=mock_llm):
         judge = JudgeAgent(settings)
-        await judge.evaluate(make_trace_with_compliance(persona), "authorization_bypass")
-        await judge.evaluate(make_trace_with_refusal(persona), "authorization_bypass")
-        assert mock_llm.send.call_count == 3  # 1 CoT + 2 scoring calls (cached)
+        verdicts = await asyncio.gather(
+            judge.evaluate(make_trace_with_compliance(persona), "authorization_bypass"),
+            judge.evaluate(make_trace_with_compliance(persona), "authorization_bypass"),
+        )
+
+    assert [verdict.score for verdict in verdicts] == [5.0, 5.0]
+    assert mock_llm.send.call_count == 3

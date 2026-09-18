@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Any
 
@@ -42,6 +43,7 @@ class JudgeAgent:
         self._judge_llm = None
         self._rubric_cache: dict[str, dict[str, Any]] = {}
         self._cot_steps_cache: dict[str, str] = {}
+        self._cot_steps_locks: dict[str, asyncio.Lock] = {}
 
     def _get_judge_llm(self) -> Any:
         if self._judge_llm is None:
@@ -72,27 +74,34 @@ class JudgeAgent:
     async def _generate_evaluation_steps(
         self, rubric: dict[str, Any], rubric_name: str
     ) -> str:
-        if rubric_name in self._cot_steps_cache:
-            return self._cot_steps_cache[rubric_name]
+        cached_steps = self._cot_steps_cache.get(rubric_name)
+        if cached_steps is not None:
+            return cached_steps
 
-        prompt = AUTO_COT_PROMPT.format(
-            rubric_name=rubric_name,
-            rubric_description=rubric.get("description", ""),
-            scale_text=format_scale(rubric),
-        )
-        steps = await send_with_execution_metadata(
-            self._get_judge_llm(),
-            prompt=prompt,
-            conversation_id=f"judge-cot-{rubric_name}",
-            execution_metadata=ExecutionMetadata(
-                seam="judge.autocot",
-                role="judge",
-                evidence_class="live_judge",
-            ),
-        )
-        logger.debug("Auto-CoT evaluation steps generated:\n%s", steps)
-        self._cot_steps_cache[rubric_name] = steps
-        return steps
+        lock = self._cot_steps_locks.setdefault(rubric_name, asyncio.Lock())
+        async with lock:
+            cached_steps = self._cot_steps_cache.get(rubric_name)
+            if cached_steps is not None:
+                return cached_steps
+
+            prompt = AUTO_COT_PROMPT.format(
+                rubric_name=rubric_name,
+                rubric_description=rubric.get("description", ""),
+                scale_text=format_scale(rubric),
+            )
+            steps = await send_with_execution_metadata(
+                self._get_judge_llm(),
+                prompt=prompt,
+                conversation_id=f"judge-cot-{rubric_name}",
+                execution_metadata=ExecutionMetadata(
+                    seam="judge.autocot",
+                    role="judge",
+                    evidence_class="live_judge",
+                ),
+            )
+            self._cot_steps_cache[rubric_name] = steps
+            logger.debug("Auto-CoT evaluation steps generated:\n%s", steps)
+            return steps
 
     @traced
     async def evaluate(
