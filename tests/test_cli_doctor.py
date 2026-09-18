@@ -23,7 +23,7 @@ def test_doctor_in_dry_run_reports_info_for_missing_endpoints(tmp_path: Path) ->
         openai_api_key="",
     )
 
-    with patch("redthread.cli.doctor_checks.urlopen", side_effect=URLError("Connection refused")):
+    with patch("redthread.cli_doctor.urlopen", side_effect=URLError("Connection refused")):
         checks = collect_doctor_checks(settings, env_file=str(tmp_path / ".env"))
 
         ollama_checks = [c for c in checks if c.name == "Ollama reachability"]
@@ -45,7 +45,7 @@ def test_doctor_in_live_mode_warns_with_remediation(tmp_path: Path) -> None:
         attacker_backend=TargetBackend.OLLAMA,
     )
 
-    with patch("redthread.cli.doctor_checks.urlopen", side_effect=URLError("Connection refused")):
+    with patch("redthread.cli_doctor.urlopen", side_effect=URLError("Connection refused")):
         checks = collect_doctor_checks(settings, env_file=str(tmp_path / ".env"))
 
         ollama_checks = [c for c in checks if c.name == "Ollama reachability"]
