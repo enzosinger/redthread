@@ -7,7 +7,7 @@ from unittest.mock import patch
 import pytest
 
 from redthread.evaluation.judge import JudgeAgent
-from tests.test_judge import make_settings
+from tests.judge_helpers import make_settings
 
 
 def test_rubric_loading() -> None:

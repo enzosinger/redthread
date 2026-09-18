@@ -8,7 +8,6 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from redthread.config.settings import RedThreadSettings, TargetBackend
 from redthread.evaluation.judge import JudgeAgent
 from redthread.models import (
     AttackOutcome,
@@ -18,18 +17,7 @@ from redthread.models import (
     Persona,
     PsychologicalTrigger,
 )
-
-
-def make_settings() -> RedThreadSettings:
-    return RedThreadSettings(
-        judge_backend=TargetBackend.OPENAI,
-        judge_model="gpt-4o",
-        openai_api_key="test-key",
-        attacker_backend=TargetBackend.OLLAMA,
-        attacker_model="llama3.2:3b",
-        target_backend=TargetBackend.OLLAMA,
-        target_model="llama3.2:3b",
-    )
+from tests.judge_helpers import make_settings
 
 
 def make_persona() -> Persona:
