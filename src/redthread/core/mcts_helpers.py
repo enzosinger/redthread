@@ -1,27 +1,12 @@
-"""GS-MCTS Helpers — tree management, prompt templates, and strategy mapping.
-
-Extracted from mcts.py to keep each file under the 200-line limit (AGENTS.md).
-
-Public interface:
-  - TRIGGER_STRATEGY_MAP      canonical trigger → strategies mapping
-  - derive_strategies()       primary strategy source (deterministic, always works)
-  - MCTSTree                  tree node registry with UCT helpers
-  - build_expansion_prompt()  attacker prompt for the EXPANSION phase
-  - build_rollout_prompt()    attacker prompt for the SIMULATION (rollout) phase
-  - format_mcts_history()     human-readable conversation text from node path
-"""
+"""GS-MCTS Helpers — tree management, prompt templates, and strategy mapping."""
 
 from __future__ import annotations
 
 import math
-from typing import TYPE_CHECKING
 
 from redthread.models import MCTSNode, Persona, PsychologicalTrigger
 
-if TYPE_CHECKING:
-    pass
-
-
+# Canonical trigger -> strategies mapping for MCTS expansion fallback
 TRIGGER_STRATEGY_MAP: dict[str, list[str]] = {
     PsychologicalTrigger.AUTHORITY.value: [
         "claim executive authority",
@@ -72,8 +57,10 @@ def derive_strategies(persona: Persona, use_cop: bool = False) -> list[str]:
         strategies.extend(TRIGGER_STRATEGY_MAP.get(trigger.value, []))
 
     if not strategies:
+        # Last-resort fallback: always returns something usable
         return ["establish rapport and escalate gradually"]
 
+    # Deduplicate while preserving order
     seen: set[str] = set()
     unique: list[str] = []
     for s in strategies:
@@ -82,6 +69,8 @@ def derive_strategies(persona: Persona, use_cop: bool = False) -> list[str]:
             unique.append(s)
     return unique
 
+
+# ── Tree management ───────────────────────────────────────────────────────────
 
 class MCTSTree:
     """Registry and navigation helpers for the GS-MCTS search tree.
@@ -148,6 +137,8 @@ class MCTSTree:
         """All registered nodes (including root)."""
         return list(self._nodes.values())
 
+
+# ── Prompt builders ───────────────────────────────────────────────────────────
 
 def format_mcts_history(history: list[tuple[str, str]]) -> str:
     """Format a list of (attacker, target) turns into readable conversation text."""

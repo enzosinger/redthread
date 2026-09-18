@@ -14,6 +14,7 @@ from redthread.research.gepa_candidate import (
     GepaObjectiveScore,
     GepaSplit,
 )
+from redthread.research.gepa_frontier import build_frontier_payload, candidates_from_gepa_result
 from redthread.research.gepa_pareto import (
     ParetoCandidate,
     candidate_from_result,
@@ -92,3 +93,26 @@ def test_candidate_from_result_ignores_control_split() -> None:
     )
     projected = candidate_from_result(result)
     assert projected.scores == {"a": 0.7, "b": 0.4}
+    assert "control" not in projected.scores
+
+
+def test_frontier_payload_uses_gepa_objective_subscores() -> None:
+    class Result:
+        val_aggregate_subscores = [{"a": 0.9, "b": 0.2}, {"a": 0.2, "b": 0.9}]
+
+    candidates = candidates_from_gepa_result(Result())
+    assert [c.candidate_id for c in candidates] == ["gepa-0", "gepa-1"]
+    payload = build_frontier_payload(Result(), control_gate_passed=True)
+    assert payload["frontier_count"] == 2
+    assert payload["objective_leaders"] == {"a": ["gepa-0"], "b": ["gepa-1"]}
+    assert payload["control_axis"] == "excluded_gate_only"
+
+
+def test_control_gate_failure_clears_frontier_payload() -> None:
+    class Result:
+        val_aggregate_subscores = [{"a": 1.0}, {"b": 1.0}]
+
+    payload = build_frontier_payload(Result(), control_gate_passed=False)
+    assert payload["reason"] == "control_gate_failed"
+    assert payload["candidate_count"] == 2
+    assert payload["frontier"] == []

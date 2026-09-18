@@ -6,10 +6,18 @@ from pathlib import Path
 
 ALLOWED_FILES = {
     "src/redthread/personas/generator.py",
+    "src/redthread/core/attack_utils.py",
     "src/redthread/core/pair.py",
+    "src/redthread/core/pair_support.py",
     "src/redthread/core/tap.py",
+    "src/redthread/core/tap_branching.py",
+    "src/redthread/core/tap_pruning.py",
     "src/redthread/core/crescendo.py",
+    "src/redthread/core/crescendo_prompts.py",
     "src/redthread/core/mcts.py",
+    "src/redthread/core/mcts_helpers.py",
+    "src/redthread/core/mcts_phases.py",
+    "src/redthread/core/mcts_rollout.py",
     "src/redthread/research/prompt_profiles.py",
 }
 BLOCKED_PREFIXES = (

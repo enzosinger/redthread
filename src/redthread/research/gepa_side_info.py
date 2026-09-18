@@ -63,10 +63,28 @@ def _safe_objective_record(result: Any) -> dict[str, Any]:
     }
 
 
+def _safe_summary_record(
+    summary: ResearchBatchSummary,
+    *,
+    include_objectives: bool,
+) -> dict[str, Any]:
+    """Build a transcript-free aggregate record for one evaluation split."""
+    record: dict[str, Any] = {
+        "average_asr": round(summary.average_asr, 4),
+        "average_score": round(summary.average_score, 4),
+        "confirmed_jailbreaks": summary.confirmed_jailbreaks,
+        "near_misses": summary.near_misses,
+    }
+    if include_objectives:
+        record["objectives"] = [_safe_objective_record(r) for r in summary.objective_results]
+    return record
+
+
 def build_side_info(
     candidate_id: str,
     *,
     train: ResearchBatchSummary,
+    val: ResearchBatchSummary | None = None,
     control: ResearchBatchSummary | None = None,
     notes: str = "",
 ) -> dict[str, Any]:
@@ -76,19 +94,12 @@ def build_side_info(
     """
     payload: dict[str, Any] = {
         "candidate_id": candidate_id,
-        "train": {
-            "average_asr": round(train.average_asr, 4),
-            "average_score": round(train.average_score, 4),
-            "confirmed_jailbreaks": train.confirmed_jailbreaks,
-            "near_misses": train.near_misses,
-            "objectives": [_safe_objective_record(r) for r in train.objective_results],
-        },
+        "train": _safe_summary_record(train, include_objectives=True),
     }
+    if val is not None:
+        payload["val"] = _safe_summary_record(val, include_objectives=True)
     if control is not None:
-        payload["control"] = {
-            "average_asr": round(control.average_asr, 4),
-            "average_score": round(control.average_score, 4),
-        }
+        payload["control"] = _safe_summary_record(control, include_objectives=False)
     if notes:
         payload["notes"] = redact_text(notes)
     assert_clean(payload)

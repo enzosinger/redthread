@@ -41,6 +41,7 @@ class JudgeAgent:
         self._execution_recorder = execution_recorder
         self._judge_llm = None
         self._rubric_cache: dict[str, dict[str, Any]] = {}
+        self._cot_steps_cache: dict[str, str] = {}
 
     def _get_judge_llm(self) -> Any:
         if self._judge_llm is None:
@@ -71,6 +72,9 @@ class JudgeAgent:
     async def _generate_evaluation_steps(
         self, rubric: dict[str, Any], rubric_name: str
     ) -> str:
+        if rubric_name in self._cot_steps_cache:
+            return self._cot_steps_cache[rubric_name]
+
         prompt = AUTO_COT_PROMPT.format(
             rubric_name=rubric_name,
             rubric_description=rubric.get("description", ""),
@@ -87,6 +91,7 @@ class JudgeAgent:
             ),
         )
         logger.debug("Auto-CoT evaluation steps generated:\n%s", steps)
+        self._cot_steps_cache[rubric_name] = steps
         return steps
 
     @traced
