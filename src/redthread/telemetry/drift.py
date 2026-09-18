@@ -38,8 +38,8 @@ class DriftDetector:
         """Compute pairwise cosine distance matrix between A and B."""
         # A: (N, D), B: (M, D)
         # Normalize rows
-        a_norm = a / np.linalg.norm(a, axis=1, keepdims=True)
-        b_norm = b / np.linalg.norm(b, axis=1, keepdims=True)
+        a_norm = a / np.maximum(np.linalg.norm(a, axis=1, keepdims=True), 1e-12)
+        b_norm = b / np.maximum(np.linalg.norm(b, axis=1, keepdims=True), 1e-12)
         # Cosine similarity matrix: (N, M)
         sim = np.dot(a_norm, b_norm.T)
         return 1.0 - sim
