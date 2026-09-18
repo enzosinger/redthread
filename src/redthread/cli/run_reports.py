@@ -34,15 +34,17 @@ def write_run_reports(
     report_dir: str | None,
     report_md: str | None,
     report_json: str | None,
+    report_sarif: str | None = None,
     include_internal_sidecars: bool,
 ) -> RunReportWriteResult:
     """Write default campaign proof artifacts and optional direct exports."""
     bundle = build_operator_artifact_bundle(result)
-    if report_md or report_json:
+    if report_md or report_json or report_sarif:
         write_operator_artifacts(
             bundle,
             markdown_path=Path(report_md) if report_md else None,
             json_path=Path(report_json) if report_json else None,
+            sarif_path=Path(report_sarif) if report_sarif else None,
         )
     manifest = write_campaign_report_artifacts(
         bundle,

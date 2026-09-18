@@ -68,6 +68,7 @@ class RedThreadGEPAAdapter:
     ) -> None:
         self.runner = runner
         self.components = components
+        self.propose_new_texts = None
 
     def evaluate(
         self,

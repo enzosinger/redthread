@@ -82,6 +82,7 @@ def register_run_command(main: click.Group, console: Console) -> None:
     @click.option("--persona-weighting-plan", type=click.Path(exists=True, dir_okay=False), default=None, hidden=True, help="Use a safe adaptive persona weighting plan JSON artifact")
     @click.option("--report-md", type=click.Path(dir_okay=False), default=None, help="Write guide-style operator report as Markdown")
     @click.option("--report-json", type=click.Path(dir_okay=False), default=None, help="Write guide-style operator report as JSON")
+    @click.option("--report-sarif", type=click.Path(dir_okay=False), default=None, help="Write security findings as SARIF v2.1.0 JSON")
     @click.option("--report-dir", type=click.Path(file_okay=False), default=None, help="Write standard campaign report directory")
     @click.option("--include-internal-sidecars", is_flag=True, default=False, hidden=True, help="Expose adaptive-learning sidecars in the report manifest")
     @click.option("--cop", is_flag=True, default=False, help="Enable CoP (Composition of Principles) strategy generation — composes triggers instead of atomic strategies")
@@ -107,6 +108,7 @@ def register_run_command(main: click.Group, console: Console) -> None:
         persona_weighting_plan: str | None,
         report_md: str | None,
         report_json: str | None,
+        report_sarif: str | None,
         report_dir: str | None,
         include_internal_sidecars: bool,
         cop: bool,
@@ -176,6 +178,7 @@ def register_run_command(main: click.Group, console: Console) -> None:
             report_dir=report_dir,
             report_md=report_md,
             report_json=report_json,
+            report_sarif=report_sarif,
             include_internal_sidecars=include_internal_sidecars,
         )
         if report_write.transcript_error:

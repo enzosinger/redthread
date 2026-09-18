@@ -37,7 +37,10 @@ class ResearchWorkspace:
         self.failure_log_path = self.runtime_dir / "failure_log.jsonl"
         self.gepa_dir = self.runtime_dir / "gepa"
         self.gepa_candidates_dir = self.gepa_dir / "candidates"
+        self.gepa_defense_candidates_dir = self.gepa_dir / "defense_candidates"
+        self.gepa_source_candidates_dir = self.gepa_dir / "source_candidates"
         self.gepa_ledger_path = self.gepa_dir / "ledger.jsonl"
+        self.gepa_frontier_path = self.gepa_dir / "pareto_frontier.json"
 
     def ensure_layout(self) -> None:
         """Create tracked templates and migrate legacy runtime files if present."""
@@ -49,6 +52,8 @@ class ResearchWorkspace:
         self.promotions_dir.mkdir(parents=True, exist_ok=True)
         self.research_memory_dir.mkdir(parents=True, exist_ok=True)
         self.gepa_candidates_dir.mkdir(parents=True, exist_ok=True)
+        self.gepa_defense_candidates_dir.mkdir(parents=True, exist_ok=True)
+        self.gepa_source_candidates_dir.mkdir(parents=True, exist_ok=True)
 
         if not self.template_config_path.exists():
             legacy_config = self.base_dir / "config.json"
