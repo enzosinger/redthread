@@ -52,6 +52,7 @@ def _candidate() -> dict[str, str]:
 
 
 def test_evaluate_returns_aligned_scores_and_objective_breakdown() -> None:
+    pytest.importorskip("gepa")
     adapter = RedThreadGEPAAdapter(_cached_runner(0.8, 4.0), components=COMPONENTS)
     batch = [_objective("a"), _objective("b")]
     result = adapter.evaluate(batch, _candidate(), capture_traces=True)
@@ -70,6 +71,7 @@ def test_evaluate_rejects_non_allowlisted_candidate() -> None:
 
 
 def test_reflective_dataset_is_redacted_and_per_component() -> None:
+    pytest.importorskip("gepa")
     adapter = RedThreadGEPAAdapter(_cached_runner(0.7, 3.5), components=COMPONENTS)
     batch = [_objective("a")]
     eval_batch = adapter.evaluate(batch, _candidate(), capture_traces=True)
