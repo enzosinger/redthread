@@ -97,8 +97,7 @@ class AgentStabilityIndex:
             evidence_warnings.append("Semantic Drift defaulted high because no organic response embeddings were available.")
         if available_records == collector.total_canary_records and available_records > 0:
             evidence_warnings.append("Current telemetry is canary-only. It is useful for operator monitoring, not proof of full benign utility.")
-        if response_mode != "measured" or semantic_mode != "measured":
-            evidence_warnings.append(warning)
+        evidence_warnings.append(warning)
         metadata = {
             "status": "insufficient_data", "organic_records": len(organic_records),
             "canary_records": collector.total_canary_records,
@@ -123,10 +122,7 @@ class AgentStabilityIndex:
             recommendation="",
             metadata=metadata,
         )
-        recommendation = generate_recommendation(report)
-        if warning not in " ".join(str(item) for item in evidence_warnings):
-            recommendation += f" {warning}"
-        return report.model_copy(update={"recommendation": recommendation})
+        return report.model_copy(update={"recommendation": generate_recommendation(report)})
 
     def compute(self, collector: TelemetryCollector) -> ASIReport:
         """Compute a truth-aware ASI report from collector data."""
