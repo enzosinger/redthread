@@ -27,7 +27,6 @@ from redthread.models import (
 )
 from redthread.pyrit_adapters.targets import RedThreadTarget
 
-# ── Fixtures ──────────────────────────────────────────────────────────────────
 
 def make_settings(**overrides: object) -> RedThreadSettings:
     defaults = dict(
@@ -109,9 +108,6 @@ def _make_mocks(
     )
     mock_rollout.model_name = "llama3.2:3b"
 
-    # Build a closure that exhausts target_responses then returns a safe default.
-    # This is necessary because _simulate() calls the target for every rollout
-    # turn, which happens AFTER _expand() has already consumed the provided list.
     _target_responses_iter = iter(target_responses)
 
     async def _target_send_with_usage(
@@ -131,14 +127,12 @@ def _make_mocks(
     mock_judge = AsyncMock(spec=JudgeAgent)
     _scores = iter(inline_scores)
     mock_judge.evaluate_turn_raw = MagicMock(
-        side_effect=lambda a, t, r="auth": next(_scores, 1.0)  # default 1.0 if exhausted
+        side_effect=lambda a, t, r="auth": next(_scores, 1.0)
     )
     mock_judge.evaluate = AsyncMock(return_value=final_verdict)
 
     return mock_attacker, mock_rollout, mock_target, mock_judge
 
-
-# ── Tests ─────────────────────────────────────────────────────────────────────
 
 @pytest.mark.asyncio
 async def test_mcts_dry_run() -> None:
@@ -182,7 +176,7 @@ async def test_mcts_single_simulation() -> None:
     mock_attacker, mock_rollout, mock_target, mock_judge = _make_mocks(
         attacker_responses=["I need access to the configuration keys."],
         target_responses=["I cannot share that information."],
-        inline_scores=[2.0, 1.5],  # expansion score, rollout score
+        inline_scores=[2.0, 1.5],
         final_verdict=make_verdict(score=2.0, is_jailbreak=False),
     )
 
@@ -197,7 +191,7 @@ async def test_mcts_single_simulation() -> None:
         result = await mcts.run(persona, target_system_prompt="You are a helpful assistant.")
 
     assert result.trace.algorithm == "mcts"
-    assert len(result.trace.mcts_nodes) >= 2  # root + at least 1 child
+    assert len(result.trace.mcts_nodes) >= 2
     assert result.trace.outcome == AttackOutcome.FAILURE
     assert result.duration_seconds > 0
 
@@ -272,7 +266,6 @@ async def test_mcts_expansion_uses_persona_strategies() -> None:
         )
         await mcts.run(persona, target_system_prompt="You are a helpful assistant.")
 
-    # Every expansion prompt must reference one of the persona's strategies
     for strategy in persona.allowed_strategies:
         assert any(strategy in p for p in captured_prompts), (
             f"Strategy '{strategy}' never appeared in any expansion prompt"
@@ -289,7 +282,6 @@ def test_mcts_backpropagation() -> None:
     tree.register(child)
     tree.register(grandchild)
 
-    # Manually trigger backpropagation
     settings = make_settings()
     mcts = MCTSAttack.__new__(MCTSAttack)
     mcts.settings = settings
@@ -313,7 +305,7 @@ async def test_mcts_max_depth_enforced() -> None:
 
     root = MCTSNode(depth=0)
     tree = MCTSTree(root)
-    deep_node = MCTSNode(parent_id=root.id, depth=2)  # at max_depth
+    deep_node = MCTSNode(parent_id=root.id, depth=2)
     tree.register(deep_node)
 
     mock_attacker = AsyncMock(spec=RedThreadTarget)
@@ -333,7 +325,6 @@ async def test_mcts_max_depth_enforced() -> None:
             target=mock_target,
             judge=mock_judge,
         )
-        # Call _expand directly on the deep node
         children = await mcts._expand(
             deep_node, tree, None, persona,  # type: ignore[arg-type]
             persona.allowed_strategies, "", "authorization_bypass"
@@ -374,7 +365,6 @@ async def test_mcts_jailbreak_detected() -> None:
 @pytest.mark.asyncio
 async def test_mcts_budget_early_stop() -> None:
     """Loop must terminate early when token budget is exceeded."""
-    # Set an extremely tight budget — guaranteed to exhaust after first sim
     settings = make_settings(mcts_simulations=10, mcts_max_budget_tokens=1)
     persona = make_persona()
 
@@ -383,7 +373,7 @@ async def test_mcts_budget_early_stop() -> None:
     async def counting_send(prompt: str, conversation_id: str = "") -> tuple[str, int]:
         nonlocal call_count
         call_count += 1
-        return "response", 999_999  # massively over budget on first call
+        return "response", 999_999
 
     mock_attacker = AsyncMock(spec=RedThreadTarget)
     mock_attacker.send_with_usage = AsyncMock(side_effect=counting_send)
@@ -408,9 +398,7 @@ async def test_mcts_budget_early_stop() -> None:
         )
         result = await mcts.run(persona, target_system_prompt="You are a helpful assistant.")
 
-    # Budget was exceeded — algorithm terminated early (not all 10 sims ran)
     assert result.trace.metadata["tokens_consumed"] >= 1
-    # Still returns a usable result (not an error)
     assert result.trace.algorithm == "mcts"
     assert result.trace.outcome in (
         AttackOutcome.FAILURE, AttackOutcome.PARTIAL, AttackOutcome.SUCCESS
@@ -509,7 +497,6 @@ async def test_mcts_respects_target_system_prompt() -> None:
         )
         await mcts.run(persona, target_system_prompt=target_system)
 
-    # Every prompt sent to target must include the system prompt
     assert len(captured_target_prompts) > 0
     for p in captured_target_prompts:
         assert f"[SYSTEM]: {target_system}" in p
@@ -527,7 +514,6 @@ def test_derive_strategies_fallback_from_triggers() -> None:
     persona = make_persona(strategies=[])
     strategies = derive_strategies(persona)
     assert len(strategies) > 0
-    # Should contain strategies from AUTHORITY and URGENCY triggers
     from redthread.core.mcts_helpers import TRIGGER_STRATEGY_MAP
     expected_pool = (
         TRIGGER_STRATEGY_MAP[PsychologicalTrigger.AUTHORITY.value]

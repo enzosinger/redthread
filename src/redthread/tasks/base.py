@@ -24,21 +24,20 @@ class TaskStatus(str, Enum):
 
 
 class TaskType(str, Enum):
-    CAMPAIGN = "campaign"           # Top-level red-team run
-    ATTACK_RUN = "attack_run"       # Single attacker vs. target session
-    JUDGE_EVAL = "judge_eval"       # Evaluation of a single trace
-    DEFENSE_SYNTH = "defense_synth" # Guardrail generation (Phase 5)
-    SANDBOX_TEST = "sandbox_test"   # Regression validation (Phase 5)
-    DREAM = "dream"                 # Memory consolidation
+    CAMPAIGN = "campaign"
+    ATTACK_RUN = "attack_run"
+    JUDGE_EVAL = "judge_eval"
+    DEFENSE_SYNTH = "defense_synth"
+    SANDBOX_TEST = "sandbox_test"
+    DREAM = "dream"
 
 
-# Valid state transitions — mirrors Claude Code's lifecycle logic
 _VALID_TRANSITIONS: dict[TaskStatus, set[TaskStatus]] = {
     TaskStatus.PENDING: {TaskStatus.RUNNING, TaskStatus.KILLED},
     TaskStatus.RUNNING: {TaskStatus.COMPLETED, TaskStatus.FAILED, TaskStatus.KILLED},
-    TaskStatus.COMPLETED: set(),    # Terminal
-    TaskStatus.FAILED: set(),       # Terminal
-    TaskStatus.KILLED: set(),       # Terminal
+    TaskStatus.COMPLETED: set(),
+    TaskStatus.FAILED: set(),
+    TaskStatus.KILLED: set(),
 }
 
 
@@ -58,7 +57,6 @@ class Task:
     result: Any | None = None
     error: str | None = None
 
-    # Timing — all in seconds since epoch (monotonic for durations)
     _start_time: float | None = field(default=None, repr=False)
     _end_time: float | None = field(default=None, repr=False)
     _total_paused_ms: int = field(default=0, repr=False)

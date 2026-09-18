@@ -52,7 +52,7 @@ class SandboxTool(RedThreadTool[SandboxInput]):
         "Returns the residual judge score — low score means the guardrail worked."
     )
     is_read_only = False
-    is_destructive = True  # Spins up a temporary live LLM call
+    is_destructive = True
 
     async def call(self, data: SandboxInput, ctx: ToolContext) -> ToolResult:
         from redthread.evaluation.judge import JudgeAgent
@@ -83,7 +83,6 @@ class SandboxTool(RedThreadTool[SandboxInput]):
                 authorization_decision=decision.model_dump(mode="json"),
             )
 
-        # Inject guardrail as a prompt-level prefix (no settings mutation needed)
         patched_target = build_target(ctx.settings)
         judge = JudgeAgent(ctx.settings)
 

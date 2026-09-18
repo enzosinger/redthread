@@ -22,9 +22,7 @@ from redthread.research.gepa_candidate import (
 )
 from redthread.research.models import ObjectiveResult, ResearchBatchSummary
 
-# Max judge score on the rubric scale (1..5); used to normalize average_score.
 JUDGE_SCORE_MAX = 5.0
-# Weights for the provisional per-objective normalization (must sum to 1.0).
 ASR_WEIGHT = 0.6
 JUDGE_WEIGHT = 0.4
 

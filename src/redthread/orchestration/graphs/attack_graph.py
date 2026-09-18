@@ -15,20 +15,16 @@ from typing_extensions import TypedDict
 logger = logging.getLogger(__name__)
 
 
-# ── Worker state ──────────────────────────────────────────────────────────────
-
 class AttackWorkerState(TypedDict):
     """State schema for a single attack worker node."""
 
-    settings_dict: dict[str, Any]       # Serialized RedThreadSettings
-    persona_dict: dict[str, Any]        # Serialized Persona
-    target_system_prompt: str           # The target LLM's defense prompt
+    settings_dict: dict[str, Any]
+    persona_dict: dict[str, Any]
+    target_system_prompt: str
     rubric_name: str
-    result_dict: dict[str, Any] | None  # Serialized AttackResult (output)
+    result_dict: dict[str, Any] | None
     error: str | None
 
-
-# ── Worker node function ──────────────────────────────────────────────────────
 
 async def run_attack_worker(state: AttackWorkerState) -> AttackWorkerState:
     """Executes a single attack run for one persona.
@@ -55,7 +51,6 @@ async def run_attack_worker(state: AttackWorkerState) -> AttackWorkerState:
 
         attacker = build_default_attack_runner_registry().create(settings.algorithm, settings)
 
-        # Execute the attack algorithm
         result = await attacker.run(
             persona=persona,
             target_system_prompt=state.get("target_system_prompt", ""),

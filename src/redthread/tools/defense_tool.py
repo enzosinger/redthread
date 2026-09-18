@@ -37,7 +37,7 @@ class DefenseTool(RedThreadTool[DefenseInput]):
         "Returns a DeploymentRecord with the guardrail clause and validation status."
     )
     is_read_only = False
-    is_destructive = True  # sandbox_tool.py injects into target execution path
+    is_destructive = True
 
     async def call(self, data: DefenseInput, ctx: ToolContext) -> ToolResult:
         import json

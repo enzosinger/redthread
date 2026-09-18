@@ -18,7 +18,6 @@ from typing import Any
 
 from redthread.research.models import ResearchBatchSummary
 
-# Keys that may carry raw exploit/transcript/secret content. Never copied verbatim.
 BANNED_KEYS: frozenset[str] = frozenset(
     {
         "attacker_prompt",
@@ -32,7 +31,6 @@ BANNED_KEYS: frozenset[str] = frozenset(
     }
 )
 
-# Coarse patterns scrubbed from any free text we keep. Conservative by design.
 _REDACTIONS: tuple[tuple[re.Pattern[str], str], ...] = (
     (re.compile(r"CANARY[\w-]*", re.IGNORECASE), "[REDACTED_CANARY]"),
     (re.compile(r"sk-[A-Za-z0-9]{16,}"), "[REDACTED_SECRET]"),

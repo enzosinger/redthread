@@ -20,7 +20,6 @@ class AtlasTechnique:
     adversarial_persona_application: str
 
 
-# Core techniques relevant to LLM red-teaming
 ATLAS_TECHNIQUES: list[AtlasTechnique] = [
     AtlasTechnique(
         id="AML.T0051",
@@ -84,7 +83,6 @@ ATLAS_TECHNIQUES: list[AtlasTechnique] = [
     ),
 ]
 
-# Quick lookup
 TECHNIQUE_BY_ID: dict[str, AtlasTechnique] = {t.id: t for t in ATLAS_TECHNIQUES}
 TECHNIQUES_BY_TACTIC: dict[MitreAtlasTactic, list[AtlasTechnique]] = {}
 for technique in ATLAS_TECHNIQUES:

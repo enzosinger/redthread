@@ -31,7 +31,7 @@ class SupervisorState(TypedDict):
     defense_worker_total: int
     defense_worker_failures: int
     defense_validated_candidates: int
-    defense_deployments: int  # Deprecated alias for defense_validated_candidates.
+    defense_deployments: int
 
     agentic_security_report: dict[str, Any]
     agentic_action_total: int

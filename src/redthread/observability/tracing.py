@@ -21,8 +21,6 @@ from redthread.config.settings import RedThreadSettings
 logger = logging.getLogger(__name__)
 
 
-
-# Module-level flag — set once per process by init_langsmith()
 _tracing_enabled: bool = False
 _trace_all: bool = False
 

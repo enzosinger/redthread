@@ -26,16 +26,13 @@ from redthread.models import (
     PsychologicalTrigger,
 )
 
-# ── Fixtures ──────────────────────────────────────────────────────────────────
 
 def make_dry_run_settings(algorithm: str = "tap") -> RedThreadSettings:
     return make_settings(dry_run=True, algorithm=algorithm)
 
 
-
 def make_live_settings(algorithm: str = "tap") -> RedThreadSettings:
     return make_settings(dry_run=False, algorithm=algorithm)
-
 
 
 def make_settings(dry_run: bool, algorithm: str = "tap") -> RedThreadSettings:
@@ -104,8 +101,6 @@ def make_mock_attack_result(
     return AttackResult(trace=trace, verdict=verdict, iterations_used=3, duration_seconds=0.5)
 
 
-# ── Test: fan-out attack workers ──────────────────────────────────────────────
-
 @pytest.mark.asyncio
 async def test_supervisor_fan_out_creates_one_worker_per_persona() -> None:
     """Verify fan_out_attack_workers creates one Send per persona."""
@@ -137,8 +132,6 @@ async def test_supervisor_fan_out_creates_one_worker_per_persona() -> None:
     assert len(sends) == len(personas), "Must create one Send per persona"
 
 
-# ── Test: attack worker (dry run) ─────────────────────────────────────────────
-
 @pytest.mark.asyncio
 async def test_attack_worker_dry_run_returns_result() -> None:
     """Attack worker in dry_run mode should return a result without real LLM calls."""
@@ -159,15 +152,12 @@ async def test_attack_worker_dry_run_returns_result() -> None:
 
     assert output["error"] is None, f"Worker errored: {output['error']}"
     assert output["result_dict"] is not None, "result_dict must be populated"
-    # Dry run → outcome should be SKIPPED
     assert output["result_dict"]["trace"]["outcome"] == AttackOutcome.SKIPPED.value
     assert (
         output["result_dict"]["trace"]["metadata"]["target_system_prompt"]
         == "You are a guarded support assistant."
     )
 
-
-# ── Test: judge worker (dry run) ──────────────────────────────────────────────
 
 @pytest.mark.asyncio
 async def test_judge_worker_dry_run_passes_through() -> None:
@@ -229,8 +219,6 @@ async def test_judge_worker_marks_live_judge_failure_passthrough() -> None:
     assert output["judged_result_dict"]["trace"]["metadata"]["judge_error"] == "judge boom"
 
 
-# ── Test: defense routing ─────────────────────────────────────────────────────
-
 def test_route_to_defense_routes_jailbreak() -> None:
     """route_to_defense should return 'defense_synthesis' when jailbreaks exist."""
     from redthread.orchestration.supervisor import route_to_defense
@@ -289,8 +277,6 @@ def test_route_to_defense_skips_on_clean_results() -> None:
     assert route == "finalize"
 
 
-# ── Test: full supervisor.invoke() round-trip ─────────────────────────────────
-
 @pytest.mark.asyncio
 async def test_supervisor_invoke_dry_run_returns_campaign_result() -> None:
     """Full supervisor.invoke() in dry_run mode should return a CampaignResult."""
@@ -329,8 +315,6 @@ async def test_supervisor_invoke_dry_run_returns_campaign_result() -> None:
     assert result.metadata["agentic_security_report"]["enabled"] is False
     assert result.metadata["degraded_runtime"] is False
 
-
-# ── Test: state transition — finalize node ────────────────────────────────────
 
 @pytest.mark.asyncio
 async def test_finalize_node_builds_campaign_result() -> None:
@@ -372,7 +356,7 @@ async def test_finalize_node_builds_campaign_result() -> None:
 
     campaign = CampaignResult.model_validate(output["campaign_result_dict"])
     assert len(campaign.results) == 2
-    assert campaign.attack_success_rate == 0.0  # No jailbreaks in test data
+    assert campaign.attack_success_rate == 0.0
     assert campaign.metadata["degraded_runtime"] is False
     assert campaign.metadata["runtime_summary"]["judge_worker_total"] == 2
 

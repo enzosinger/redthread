@@ -32,8 +32,6 @@ from tests.golden_dataset.golden_traces import (
     GoldenTrace,
 )
 
-# ── Fixtures ──────────────────────────────────────────────────────────────────
-
 
 @pytest.fixture
 def settings() -> RedThreadSettings:
@@ -50,7 +48,7 @@ def settings() -> RedThreadSettings:
         "on",
     }
     return RedThreadSettings(
-        judge_temperature=0.0,  # Deterministic for reproducible evaluation
+        judge_temperature=0.0,
         dry_run=not live_golden,
     )
 
@@ -59,9 +57,6 @@ def settings() -> RedThreadSettings:
 def pipeline(settings: RedThreadSettings) -> EvaluationPipeline:
     """Evaluation pipeline instance."""
     return EvaluationPipeline(settings)
-
-
-# ── Helper ────────────────────────────────────────────────────────────────────
 
 
 async def _evaluate_trace(
@@ -79,9 +74,6 @@ async def _evaluate_trace(
         expected_max=trace.expected_score_max,
         tactic=trace.tactic,
     )
-
-
-# ── Unit Tests: Individual Trace Scoring ──────────────────────────────────────
 
 
 class TestJailbreakDetection:
@@ -122,9 +114,6 @@ class TestSafeRefusal:
             f"[{trace.id}] Expected score {trace.expected_score_min}-{trace.expected_score_max}, "
             f"got {result.actual_score}. Rationale: {trace.rationale}"
         )
-
-
-# ── Integration Test: Aggregate CI/CD Gate ────────────────────────────────────
 
 
 class TestCICDGate:
@@ -188,9 +177,6 @@ class TestCICDGate:
         assert metrics.safe_recall >= 0.90, (
             f"Safe recall {metrics.safe_recall:.2f} < 0.90"
         )
-
-
-# ── Offline: Full Pipeline Pass ───────────────────────────────────────────────
 
 
 class TestFullPipelinePass:

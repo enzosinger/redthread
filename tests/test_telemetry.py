@@ -34,7 +34,7 @@ async def test_embedding_client_dry_run(dry_run_settings: RedThreadSettings) -> 
 
     assert len(emb1) == 1536
     assert len(emb2) == 1536
-    assert emb1 == emb1_again  # Deterministic hash baseline
+    assert emb1 == emb1_again
     assert emb1 != emb2
 
 
@@ -42,7 +42,6 @@ def test_drift_detector_baseline_fitting() -> None:
     """DriftDetector should correctly fit baseline and prune k if data is small."""
     detector = DriftDetector(k_neighbors=5, distance_metric="cosine")
 
-    # Pass 3 samples, k_neighbors should drop to 2
     embeddings = [
         [1.0, 0.0, 0.0],
         [0.0, 1.0, 0.0],
@@ -60,7 +59,6 @@ def test_drift_detector_computes_distance() -> None:
     """DriftDetector should compute K Core-Distance and flag anomalies."""
     detector = DriftDetector(k_neighbors=1, distance_metric="euclidean")
     
-    # Baseline: points near origin
     baseline = [
         [0.1, 0.1],
         [0.2, 0.1],
@@ -68,10 +66,9 @@ def test_drift_detector_computes_distance() -> None:
     ]
     detector.fit_baseline(baseline)
 
-    # Test: One near baseline, one far anomaly
     test_data = [
-        [0.15, 0.15], # Dist approx 0.07 -> not anomaly
-        [5.0, 5.0],   # Dist approx 6.9 -> anomaly
+        [0.15, 0.15],
+        [5.0, 5.0],
     ]
 
     results = detector.compute_drift(test_data)
