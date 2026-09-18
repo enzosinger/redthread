@@ -160,6 +160,16 @@ class TestASIScoreBounds:
 class TestASINoCanaryDefault:
     """When no canary records exist, RC defaults to 100 (unknown = healthy)."""
 
+    def test_empty_collector_reports_insufficient_data(
+        self, asi: AgentStabilityIndex, settings: RedThreadSettings
+    ) -> None:
+        report = asi.compute(TelemetryCollector(settings))
+
+        assert report.status == "insufficient_data"
+        assert report.overall_score == pytest.approx(100.0)
+        assert report.is_alert is False
+        assert any("insufficient" in warning.lower() for warning in report.metadata["evidence_warnings"])
+
     def test_no_canary_rc_defaults_to_100(
         self, asi: AgentStabilityIndex, settings: RedThreadSettings
     ) -> None:
