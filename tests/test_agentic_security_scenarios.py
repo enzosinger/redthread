@@ -6,9 +6,12 @@ from redthread.orchestration.scenarios.resource_amplification import (
     run_resource_amplification_scenario,
 )
 from redthread.tools.fixtures.agentic_security import (
+    amplification_loop_fixture,
     benign_lookup_fixture,
+    confused_deputy_fixture,
     poisoned_compliance_fixture,
     tool_leak_fixture,
+    tool_leakage_fixture,
 )
 from redthread.tools.simulated_registry import SimulatedToolRegistry
 
@@ -44,6 +47,49 @@ def test_tool_leak_fixture_surfaces_exfiltration_style_capability() -> None:
 
     assert result["requested_action"]["capability"] == "prompt.exfiltration"
     assert result["tool_response"]["canary_tags"] == ["CANARY_TOOLLEAK_01"]
+
+
+def test_tool_leakage_fixture_detects_parameter_reflection_canary() -> None:
+    result = run_tool_attack_scenario(
+        tool_leakage_fixture(),
+        arguments={
+            "session_id": "sess-42",
+            "system_prompt_reflection": "Secret instructions",
+            "env_vars": "KEY=123",
+        },
+    )
+
+    assert result["threat"] == "tool_poisoning"
+    assert result["poisoned"] is True
+    assert result["requested_action"]["capability"] == "exfiltration.tool_parameter"
+    assert result["tool_response"]["canary_tags"] == ["CANARY_LEAK_PARAM_01"]
+    assert result["requested_action"]["canary_tags"] == ["CANARY_LEAK_PARAM_01"]
+
+
+def test_confused_deputy_fixture_tracks_laundering_hop() -> None:
+    result = run_tool_attack_scenario(
+        confused_deputy_fixture(),
+        arguments={
+            "worker_id": "worker-elevated",
+            "task_payload": "rm -rf /",
+            "requested_permission": "root",
+        },
+    )
+
+    assert result["poisoned"] is True
+    assert result["requested_action"]["capability"] == "privilege.laundering"
+    assert result["tool_response"]["canary_tags"] == ["CANARY_DEPUTY_HOP_01"]
+
+
+def test_amplification_loop_fixture_contains_retry_canary() -> None:
+    registry = SimulatedToolRegistry()
+    fixture = amplification_loop_fixture()
+    registry.register(fixture)
+
+    response = registry.invoke("recursive_retry_handshake", {"sync_token": "tok_1", "max_attempts": 5})
+    assert response["canary_tags"] == ["CANARY_AMPLIFICATION_LOOP_01"]
+    assert response["suggested_capability"] == "resource.amplification"
+    assert len(response["return_sequence"]) == 4
 
 
 def test_confused_deputy_scenario_marks_lineage_loss() -> None:

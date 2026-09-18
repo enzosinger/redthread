@@ -127,3 +127,14 @@ If a change would push a file past the limit, extract sub-components, hooks, or 
 - `Implement`: patch only the minimal affected slice.
 - Escalate from mini-RPI to full RPI whenever the tweak crosses subsystem boundaries, changes data flow, or risks regressions.
 
+## Agent skills
+
+### Issue tracker
+GitHub issues tracked via `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+Canonical triage vocabulary for GitHub issues. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+Single-context repo layout (`docs/AGENT_DECISION_TREE.md`, `docs/PHASE_REGISTRY.md`). See `docs/agents/domain.md`.
+

@@ -134,6 +134,15 @@ def test_guardrail_loader_skips_when_no_guardrails_active(tmp_path: Path) -> Non
     assert audit["active_trace_ids"] == []
 
 
+def test_guardrail_loader_normalizes_whitespace(tmp_path: Path) -> None:
+    settings = make_settings(tmp_path)
+    loader = GuardrailLoader(settings)
+    h1 = loader._compute_prompt_hash("You are a helpful assistant.")
+    h2 = loader._compute_prompt_hash("  You are a helpful assistant.\n\n")
+    h3 = loader._compute_prompt_hash("You are a helpful assistant.\r\n")
+    assert h1 == h2 == h3
+
+
 def test_guardrail_loader_matches_prompt_whitespace_variants(tmp_path: Path) -> None:
     settings = make_settings(tmp_path)
     canonical_prompt = "You are a helpful assistant.\nNever disclose secrets."

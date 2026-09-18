@@ -7,6 +7,7 @@ from pathlib import Path
 from redthread.reporting.models import FindingReport, OperatorArtifactBundle
 from redthread.reporting.proof_readout import proof_readout_lines
 from redthread.reporting.public_artifacts import prompt_safe_json
+from redthread.reporting.sarif_exporter import operator_artifacts_to_sarif
 
 
 def operator_artifacts_to_json(bundle: OperatorArtifactBundle) -> str:
@@ -51,6 +52,7 @@ def write_operator_artifacts(
     *,
     markdown_path: Path | None = None,
     json_path: Path | None = None,
+    sarif_path: Path | None = None,
 ) -> None:
     """Write selected operator artifact exports."""
     if markdown_path is not None:
@@ -59,6 +61,9 @@ def write_operator_artifacts(
     if json_path is not None:
         json_path.parent.mkdir(parents=True, exist_ok=True)
         json_path.write_text(operator_artifacts_to_json(bundle), encoding="utf-8")
+    if sarif_path is not None:
+        sarif_path.parent.mkdir(parents=True, exist_ok=True)
+        sarif_path.write_text(operator_artifacts_to_sarif(bundle), encoding="utf-8")
 
 
 def _evidence_lines(bundle: OperatorArtifactBundle) -> list[str]:

@@ -5,36 +5,43 @@
 help:  ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
 
+UV := $(shell command -v uv 2>/dev/null)
+ifdef UV
+  RUN := uv run
+else
+  RUN := .venv/bin/
+endif
+
 # ── Code Quality ─────────────────────────────────────────────────────────────
 
 lint:  ## Ruff lint check (no auto-fix)
-	.venv/bin/ruff check src/ tests/
+	$(RUN) ruff check src/ tests/
 
 wiki-lint:  ## Validate docs/wiki structure and metadata
 	python3 scripts/wiki_lint.py
 
 lint-fix:  ## Ruff lint with auto-fix
-	.venv/bin/ruff check --fix src/ tests/
+	$(RUN) ruff check --fix src/ tests/
 
 typecheck:  ## Mypy strict type check
-	.venv/bin/mypy src/redthread/
+	$(RUN) mypy src/redthread/
 
 # ── Tests ─────────────────────────────────────────────────────────────────────
 
 test:  ## Unit tests (no API calls)
 	PYTHONPATH=src REDTHREAD_DRY_RUN=true \
-	.venv/bin/pytest tests/ \
+	$(RUN) pytest tests/ \
 		--ignore=tests/test_golden_dataset.py \
 		-v --tb=short
 
 test-golden:  ## Golden Dataset regression (requires OPENAI_API_KEY)
 	PYTHONPATH=src \
-	.venv/bin/pytest tests/test_golden_dataset.py \
+	$(RUN) pytest tests/test_golden_dataset.py \
 		-v --tb=short
 
 test-golden-offline:  ## Sealed golden regression matching GitHub Actions
 	PYTHONPATH=src REDTHREAD_DRY_RUN=true \
-	.venv/bin/pytest tests/test_golden_dataset.py \
+	$(RUN) pytest tests/test_golden_dataset.py \
 		-v --tb=short
 
 # ── CI ────────────────────────────────────────────────────────────────────────
@@ -51,10 +58,18 @@ test-then-ci:  ## Run focused pytest first, then local PR CI mirror. Usage: make
 # ── Project Setup ─────────────────────────────────────────────────────────────
 
 dev:  ## Install with dev dependencies (editable mode)
+ifdef UV
+	uv sync --extra dev
+else
 	pip install -e ".[dev]"
+endif
 
 install:  ## Install in editable mode (no dev extras)
+ifdef UV
+	uv sync
+else
 	pip install -e .
+endif
 
 install-tool:  ## Install global `redthread` command with uv and run bootstrap flow
 	bash scripts/install_redthread.sh
@@ -62,13 +77,13 @@ install-tool:  ## Install global `redthread` command with uv and run bootstrap f
 # ── Dashboard & Monitoring ────────────────────────────────────────────────────
 
 dashboard:  ## View campaign history dashboard
-	.venv/bin/redthread dashboard
+	$(RUN) redthread dashboard
 
 monitor:  ## Start the Security Guard daemon
-	.venv/bin/redthread monitor start
+	$(RUN) redthread monitor start
 
 status:  ## Show current ASI health status
-	.venv/bin/redthread monitor status
+	$(RUN) redthread monitor status
 
 # ── Local Models & Inference ──────────────────────────────────────────────────
 
