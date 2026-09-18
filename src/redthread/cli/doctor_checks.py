@@ -3,13 +3,11 @@
 from __future__ import annotations
 
 import os
-import shutil
 import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Final
 from urllib.error import URLError
-from urllib.request import urlopen
 
 from redthread.config.settings import RedThreadSettings, TargetBackend
 
@@ -69,7 +67,9 @@ def _venv_check() -> DoctorCheck:
 
 
 def _console_script_check() -> DoctorCheck:
-    command_path = shutil.which("redthread")
+    import redthread.cli_doctor as cli_doctor
+
+    command_path = cli_doctor.shutil.which("redthread")
     if command_path:
         return DoctorCheck("redthread command", "pass", command_path)
     return DoctorCheck(
@@ -135,8 +135,10 @@ def _ollama_urls(settings: RedThreadSettings) -> set[str]:
 
 
 def _ollama_check(base_url: str, *, dry_run: bool = False) -> DoctorCheck:
+    import redthread.cli_doctor as cli_doctor
+
     try:
-        with urlopen(f"{base_url}/api/tags", timeout=_DEFAULT_TIMEOUT):
+        with cli_doctor.urlopen(f"{base_url}/api/tags", timeout=_DEFAULT_TIMEOUT):
             return DoctorCheck("Ollama reachability", "pass", base_url)
     except URLError as exc:
         if dry_run:
