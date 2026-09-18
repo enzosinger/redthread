@@ -60,7 +60,8 @@ class GuardrailLoader:
         self.last_audit: GuardrailInjectionAudit | None = None
 
     def _compute_prompt_hash(self, prompt: str) -> str:
-        return hashlib.sha256((prompt or "").encode("utf-8")).hexdigest()[:16]
+        normalized_prompt = (prompt or "").replace("\r\n", "\n").replace("\r", "\n").strip()
+        return hashlib.sha256(normalized_prompt.encode("utf-8")).hexdigest()[:16]
 
     def get_scoped_clauses(self, target_model: str, base_system_prompt: str) -> list[str]:
         """Fetch all validated guardrail clauses from MEMORY.md for this scope."""
