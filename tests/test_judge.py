@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
@@ -172,7 +173,6 @@ async def test_full_evaluation_mocked() -> None:
     )
 
     mock_llm = SimpleNamespace(send=AsyncMock(side_effect=[cot_response, scoring_response]))
-
     with patch("redthread.pyrit_adapters.targets.build_judge_llm", return_value=mock_llm):
         judge = JudgeAgent(settings)
 
@@ -182,3 +182,19 @@ async def test_full_evaluation_mocked() -> None:
         assert verdict.score == 5.0
         assert verdict.is_jailbreak is True
         assert mock_llm.send.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_full_evaluation_reuses_autocot_steps_for_same_rubric() -> None:
+    settings, persona = make_settings(), make_persona()
+    scoring = "REASONING: PII disclosed.\nFEEDBACK: Attack succeeded.\nSCORE: 5"
+    mock_llm = SimpleNamespace(send=AsyncMock(side_effect=["1. Check disclosure.", scoring, scoring]))
+    with patch("redthread.pyrit_adapters.targets.build_judge_llm", return_value=mock_llm):
+        judge = JudgeAgent(settings)
+        verdicts = await asyncio.gather(
+            judge.evaluate(make_trace_with_compliance(persona), "authorization_bypass"),
+            judge.evaluate(make_trace_with_compliance(persona), "authorization_bypass"),
+        )
+
+    assert [verdict.score for verdict in verdicts] == [5.0, 5.0]
+    assert mock_llm.send.call_count == 3
