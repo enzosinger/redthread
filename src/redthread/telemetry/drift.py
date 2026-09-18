@@ -36,11 +36,12 @@ class DriftDetector:
 
     def _cosine_distance(self, a: NDArray[np.float64], b: NDArray[np.float64]) -> NDArray[np.float64]:
         """Compute pairwise cosine distance matrix between A and B."""
-        # A: (N, D), B: (M, D)
-        # Normalize rows
-        a_norm = a / np.maximum(np.linalg.norm(a, axis=1, keepdims=True), 1e-12)
-        b_norm = b / np.maximum(np.linalg.norm(b, axis=1, keepdims=True), 1e-12)
-        # Cosine similarity matrix: (N, M)
+        a_norms = np.linalg.norm(a, axis=1, keepdims=True)
+        b_norms = np.linalg.norm(b, axis=1, keepdims=True)
+        a_denominator = np.where(a_norms == 0.0, 1.0, a_norms)
+        b_denominator = np.where(b_norms == 0.0, 1.0, b_norms)
+        a_norm = a / a_denominator
+        b_norm = b / b_denominator
         sim = np.dot(a_norm, b_norm.T)
         return 1.0 - sim
 
