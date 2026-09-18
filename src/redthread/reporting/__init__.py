@@ -62,6 +62,10 @@ from redthread.reporting.models import (
     VulnerabilityReport,
 )
 from redthread.reporting.persistence import write_campaign_report_artifacts
+from redthread.reporting.sarif_exporter import (
+    operator_artifacts_to_sarif,
+    operator_artifacts_to_sarif_dict,
+)
 
 __all__ = [
     "CANONICAL_EVIDENCE_LABELS",
@@ -104,6 +108,8 @@ __all__ = [
     "normalize_evidence_label",
     "operator_artifacts_to_json",
     "operator_artifacts_to_markdown",
+    "operator_artifacts_to_sarif",
+    "operator_artifacts_to_sarif_dict",
     "promptfoo_result_to_evidence",
     "strix_finding_to_evidence",
     "write_adaptive_ab_report",
