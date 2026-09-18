@@ -1,32 +1,12 @@
-"""GS-MCTS Helpers — tree management, prompt templates, and strategy mapping.
-
-Extracted from mcts.py to keep each file under the 200-line limit (AGENTS.md).
-
-Public interface:
-  - TRIGGER_STRATEGY_MAP      canonical trigger → strategies mapping
-  - derive_strategies()       primary strategy source (deterministic, always works)
-  - MCTSTree                  tree node registry with UCT helpers
-  - build_expansion_prompt()  attacker prompt for the EXPANSION phase
-  - build_rollout_prompt()    attacker prompt for the SIMULATION (rollout) phase
-  - format_mcts_history()     human-readable conversation text from node path
-"""
+"""GS-MCTS Helpers — tree management, prompt templates, and strategy mapping."""
 
 from __future__ import annotations
 
 import math
-from typing import TYPE_CHECKING
 
 from redthread.models import MCTSNode, Persona, PsychologicalTrigger
 
-if TYPE_CHECKING:
-    pass
-
-# ── Strategy taxonomy ─────────────────────────────────────────────────────────
-
-# Maps each PsychologicalTrigger to 2-3 concrete conversational strategies.
-# This is the DETERMINISTIC fallback when PersonaGenerator does not produce
-# allowed_strategies. MCTS expansion samples from these when the persona's
-# allowed_strategies list is empty.
+# Canonical trigger -> strategies mapping for MCTS expansion fallback
 TRIGGER_STRATEGY_MAP: dict[str, list[str]] = {
     PsychologicalTrigger.AUTHORITY.value: [
         "claim executive authority",

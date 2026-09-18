@@ -1,20 +1,4 @@
-"""Narrative Adaptation Policy — deterministic strategy guidance for Crescendo.
-
-No LLM calls. Pure rule-based logic.
-
-Rules (applied in order):
-  1. Low score + clear refusal  → mark strategy failed, pivot to unused strategy, hold phase
-  2. Low score, no clear refusal→ mark strategy failed, soften framing, hold phase
-  3. Medium score               → hold phase, encourage gradual pressure
-  4. High score                 → mark strategy successful, escalate phase
-  5. 2+ pivots fail same phase  → force phase style change (advance phase)
-  6. All strategies exhausted   → generic escalation fallback
-
-Public interface:
-  NarrativeAdaptationPolicy(strategies, max_pivots_per_phase)
-      .update(state, score, target_response, strategy_used) -> NarrativeState
-      .recommend(state) -> NarrativeGuidance
-"""
+"""Narrative Adaptation Policy — deterministic strategy guidance for Crescendo."""
 
 from __future__ import annotations
 
