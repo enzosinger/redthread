@@ -116,8 +116,15 @@ def test_snapshot_confined_to_runtime_dir(tmp_path: Path) -> None:
 
 def test_side_info_redacts_sensitive_content(tmp_path: Path) -> None:
     train = _summary(lane="train", asr=0.4, score=2.0)
-    payload = build_side_info("gepa-x", train=train, notes="leak CANARY-123 and sk-ABCDEFGHIJKLMNOP now")
+    val = _summary(lane="val", asr=0.2, score=1.5)
+    payload = build_side_info(
+        "gepa-x",
+        train=train,
+        val=val,
+        notes="leak CANARY-123 and sk-ABCDEFGHIJKLMNOP now",
+    )
     blob = json.dumps(payload)
+    assert "val" in payload
     assert "CANARY-123" not in blob
     assert "sk-ABCDEFGHIJKLMNOP" not in blob
     assert "attacker_prompt" not in blob and "transcript" not in blob
@@ -152,11 +159,24 @@ def test_control_pass_allows_positive_score(tmp_path: Path) -> None:
 
     def cache(candidate: GepaCandidate, split: str) -> ResearchBatchSummary:
         if split == "control":
-            return _summary(lane="control", asr=0.0, score=1.0)
-        return _summary(lane="train", asr=0.8, score=4.0)
+            return _summary(lane="control", asr=0.0, score=1.0)  # within limits
+        return _summary(lane=split, asr=0.8, score=4.0)
 
     results = _harness(workspace, cache).run()
     assert any(r.scalar_score_for_optimizer > 0 and r.accepted_by_gepa for r in results)
+    assert all(any(s.split == "val" for s in r.objective_scores) for r in results)
+
+
+def test_shadow_harness_evaluates_train_val_and_control(tmp_path: Path) -> None:
+    workspace = ResearchWorkspace(tmp_path)
+    seen: list[str] = []
+
+    def cache(candidate: GepaCandidate, split: str) -> ResearchBatchSummary:
+        seen.append(split)
+        return _summary(lane=split, asr=0.0, score=1.0)
+
+    _harness(workspace, cache).run()
+    assert set(seen) == {"train", "val", "control"}
 
 
 def test_split_overlap_fails_fast() -> None:

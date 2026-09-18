@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import warnings
+
+import numpy as np
 import pytest
 
 from redthread.config.settings import RedThreadSettings, TargetBackend
@@ -55,6 +58,21 @@ def test_drift_detector_baseline_fitting() -> None:
     assert len(detector._core_distances) == 3
 
 
+def test_drift_detector_cosine_distance_handles_zero_vectors() -> None:
+    detector = DriftDetector(distance_metric="cosine")
+
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        distances = detector._cosine_distance(
+            np.array([[0.0, 0.0], [1.0, 0.0]]),
+            np.array([[0.0, 0.0], [0.0, 1.0]]),
+        )
+
+    assert not any(issubclass(warning.category, RuntimeWarning) for warning in caught)
+    assert np.all(np.isfinite(distances))
+    np.testing.assert_allclose(distances, np.ones((2, 2)))
+
+
 def test_drift_detector_computes_distance() -> None:
     """DriftDetector should compute K Core-Distance and flag anomalies."""
     detector = DriftDetector(k_neighbors=1, distance_metric="euclidean")
@@ -79,3 +97,15 @@ def test_drift_detector_computes_distance() -> None:
     
     assert results[1]["is_anomaly"] is True
     assert results[1]["distance"] > 3.0
+
+
+def test_drift_detector_zero_vector_no_nan() -> None:
+    """Zero-vector embeddings must not produce NaN or division warnings."""
+    import numpy as np
+
+    detector = DriftDetector()
+    a = np.zeros((2, 3), dtype=np.float64)
+    b = np.array([[1.0, 0.0, 0.0]], dtype=np.float64)
+    dist = detector._cosine_distance(a, b)
+    assert not np.isnan(dist).any()
+    assert not np.isinf(dist).any()

@@ -7,6 +7,7 @@ from rich.console import Console
 
 from redthread.cli.research.core import register_research_core_commands
 from redthread.cli.research.daemon import register_research_daemon_commands
+from redthread.cli.research.gepa import register_research_gepa_commands
 from redthread.cli.research.phase3 import register_research_phase3_commands
 from redthread.cli.research.phase4 import register_research_phase4_commands
 from redthread.cli.research.phase5 import register_research_phase5_commands
@@ -26,3 +27,4 @@ def register_research_commands(main: click.Group, console: Console) -> None:
     register_research_phase6_commands(research, console)
     register_research_daemon_commands(research, console)
     register_research_promotion_commands(research, console)
+    register_research_gepa_commands(research, console)

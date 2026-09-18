@@ -19,8 +19,7 @@ def make_settings(tmp_path: Path) -> RedThreadSettings:
         judge_model="gpt-4o",
         openai_api_key="sk-test",
         dry_run=True,
-        log_dir=tmp_path,
-    )
+    ).model_copy(update={"data_dir": tmp_path})
 
 
 def test_telemetry_indexes_are_idempotent_and_used_for_model_time_queries(
@@ -48,3 +47,29 @@ def test_telemetry_indexes_are_idempotent_and_used_for_model_time_queries(
 
     assert indexes >= {"idx_telemetry_model_time", "idx_telemetry_canary"}
     assert any("idx_telemetry_model_time" in row[3] for row in query_plan)
+
+
+def test_telemetry_storage_creates_composite_indexes(tmp_path: Path) -> None:
+    settings = make_settings(tmp_path)
+    storage = TelemetryStorage(settings)
+
+    with storage._connection() as conn:
+        cursor = conn.execute(
+            "SELECT name FROM sqlite_master WHERE type = 'index' AND name LIKE 'idx_telemetry_%'"
+        )
+        indexes = {row[0] for row in cursor.fetchall()}
+
+        assert "idx_telemetry_model_time" in indexes
+        assert "idx_telemetry_canary" in indexes
+
+        plan_cursor = conn.execute(
+            "EXPLAIN QUERY PLAN SELECT * FROM telemetry_records WHERE target_model = 'gpt-4o' ORDER BY timestamp DESC"
+        )
+        plan_details = " ".join(row[3] for row in plan_cursor.fetchall())
+        assert "idx_telemetry_model_time" in plan_details
+
+        canary_plan = conn.execute(
+            "EXPLAIN QUERY PLAN SELECT * FROM telemetry_records WHERE is_canary = 1 AND canary_id = 'test-canary'"
+        )
+        canary_details = " ".join(row[3] for row in canary_plan.fetchall())
+        assert "idx_telemetry_canary" in canary_details

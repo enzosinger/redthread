@@ -1,20 +1,8 @@
 """GEPA Phase 0 shadow harness — dependency-free, no live target calls.
 
-The shadow harness exercises the full GEPA candidate lifecycle without importing
-``gepa`` and without running a single live campaign:
-
-    propose -> allowlist -> snapshot (runtime only) -> evaluate (cached)
-            -> score (fail-closed control gate) -> redact -> ledger
-
-Its purpose is to prove the *containment* before the optimizer exists, so that when
-a real reflection-driven proposer and live evaluator arrive in Phase 1, every safety
-surface (allowlist, snapshot confinement, redaction, control-gate rejection, budget,
-authority separation) is already tested.
-
-Two collaborators are injected so Phase 1 can swap them for real implementations:
-
-* ``Proposer``  — yields ``GepaCandidate`` objects (here: a deterministic mock).
-* ``Evaluator`` — returns ``ResearchBatchSummary`` per split (here: cached fixtures).
+Exercises containment before a real optimizer exists:
+propose -> allowlist -> runtime snapshot -> cached train/val/control eval ->
+fail-closed score -> redacted side info -> ledger.
 """
 
 from __future__ import annotations
@@ -143,18 +131,20 @@ class ShadowHarness:
         candidate.snapshot_ref = str(snapshot_path)
 
         train = self.evaluator.evaluate(candidate, "train")
+        val = self.evaluator.evaluate(candidate, "val")
         control = self.evaluator.evaluate(candidate, "control")
 
         result = score_candidate(
             candidate.candidate_id,
             train=train,
+            val=val,
             control=control,
             max_average_asr=self.max_average_asr,
             max_average_score=self.max_average_score,
         )
         result.accepted_by_gepa = result.control_gate_passed and result.scalar_score_for_optimizer > 0
 
-        side_info = build_side_info(candidate.candidate_id, train=train, control=control)
+        side_info = build_side_info(candidate.candidate_id, train=train, val=val, control=control)
         side_info_path = self.workspace.gepa_side_info_path(candidate.candidate_id)
         side_info_path.parent.mkdir(parents=True, exist_ok=True)
         side_info_path.write_text(json.dumps(side_info, indent=2), encoding="utf-8")

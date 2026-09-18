@@ -63,16 +63,10 @@ class TelemetryStorage:
                 """
             )
             conn.execute(
-                """
-                CREATE INDEX IF NOT EXISTS idx_telemetry_model_time
-                ON telemetry_records (target_model, timestamp)
-                """
+                "CREATE INDEX IF NOT EXISTS idx_telemetry_model_time ON telemetry_records (target_model, timestamp)"
             )
             conn.execute(
-                """
-                CREATE INDEX IF NOT EXISTS idx_telemetry_canary
-                ON telemetry_records (is_canary, canary_id)
-                """
+                "CREATE INDEX IF NOT EXISTS idx_telemetry_canary ON telemetry_records (is_canary, canary_id)"
             )
             conn.commit()
 
